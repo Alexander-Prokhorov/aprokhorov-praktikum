@@ -23,7 +23,6 @@ func (m *Metrics) RandomMetric() {
 }
 
 func (m *Metrics) PollMemStats(lookupMemStat []string) error {
-	var poll_error error
 	m.MemStatMetrics = make(map[string]gauge)
 	// Собираем метрики пакетом runtime
 	var metric_value runtime.MemStats
@@ -32,20 +31,20 @@ func (m *Metrics) PollMemStats(lookupMemStat []string) error {
 	var mapInterface map[string]interface{}
 	jsonMemStats, err := json.Marshal(metric_value)
 	if err != nil {
-		poll_error = err
+		return err
 	}
 	json.Unmarshal(jsonMemStats, &mapInterface)
 	// Выбираем только интересующие нас метрики
 	// Сразу конвертруем их в gauge-тип
 	for _, metric := range lookupMemStat {
 		target_metric := mapInterface[metric]
-		switch target_metric.(type) {
+		switch data := target_metric.(type) {
 		case int64:
-			m.MemStatMetrics[metric] = gauge(target_metric.(int64))
+			m.MemStatMetrics[metric] = gauge(data)
 		case float64:
-			m.MemStatMetrics[metric] = gauge(target_metric.(float64))
+			m.MemStatMetrics[metric] = gauge(data)
 		}
 	}
 	m.PollCount++
-	return poll_error
+	return nil
 }

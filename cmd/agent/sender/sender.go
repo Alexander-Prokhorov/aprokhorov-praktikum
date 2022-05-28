@@ -21,18 +21,15 @@ func (s *Sender) Init() {
 
 func (s *Sender) SendMetric(name string, mtype string, value string) error {
 	s.Url.Path = "update/" + mtype + "/" + name + "/" + value
-	//body := []byte{'0'}
-	var err error
-	request, errreq := http.NewRequest(http.MethodPost, s.Url.String(), nil)
-	if errreq != nil {
-		//fmt.Println("err_req", errreq)
-		err = errreq
+	request, err := http.NewRequest(http.MethodPost, s.Url.String(), nil)
+	if err != nil {
+		return err
 	}
 	request.Header.Set("Content-Type", "text/plain")
-	_, errres := s.Client.Do(request)
-	if errres != nil {
-		//fmt.Println("err_res", errres)
-		err = errres
+	res, err := s.Client.Do(request)
+	res.Body.Close()
+	if err != nil {
+		return err
 	}
-	return err
+	return nil
 }

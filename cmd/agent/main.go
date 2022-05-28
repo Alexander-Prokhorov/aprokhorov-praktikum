@@ -79,6 +79,7 @@ func main() {
 				err := send.SendMetric(name, "counter", value)
 				fmt.Println(err)
 			}("PollCount", sValue)
+
 		}
 	}
 
