@@ -5,6 +5,7 @@ import (
 	"aprokhorov-praktikum/cmd/agent/sender"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"time"
 
 	yaml "gopkg.in/yaml.v3"
@@ -58,9 +59,26 @@ func main() {
 			NewMetrics.RandomMetric()
 			fmt.Println("Poll Count:", NewMetrics.PollCount)
 		case <-ticker_send.C:
-			err := send.SendMetric("default", "guage", "123")
 			fmt.Println("Send Data to Server")
-			fmt.Println(err)
+			for name, fValue := range NewMetrics.MemStatMetrics {
+				sValue := strconv.FormatFloat(float64(fValue), 'f', -1, 64)
+				go func(name string, value string) {
+					err := send.SendMetric(name, "guage", value)
+					fmt.Println(err)
+				}(name, sValue)
+			}
+
+			sValue := strconv.FormatFloat(float64(NewMetrics.RandomValue), 'f', -1, 64)
+			go func(name string, value string) {
+				err := send.SendMetric(name, "guage", value)
+				fmt.Println(err)
+			}("RandomValue", sValue)
+
+			sValue = strconv.Itoa(int(NewMetrics.PollCount))
+			go func(name string, value string) {
+				err := send.SendMetric(name, "counter", value)
+				fmt.Println(err)
+			}("PollCount", sValue)
 		}
 	}
 
