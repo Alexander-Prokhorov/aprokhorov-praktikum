@@ -20,26 +20,23 @@ type Config struct {
 }
 
 func main() {
+	// Init Config
 	conf := Config{
 		Address: "127.0.0.1",
 		Port:    "8080",
 	}
 
+	// Init Storage
 	database := &storage.MemStorage{}
 	database.Init()
 
-	handleUpdateCounter := handlers.HandlerUpdate{
-		MetricType: "counter",
-		Storage:    database,
+	// Init Handler
+	handleUpdate := handlers.HandlerUpdate{
+		Storage: database,
 	}
-	http.Handle("/update/counter/", handleUpdateCounter)
+	http.Handle("/update/", handleUpdate)
 
-	handleUpdateGauge := handlers.HandlerUpdate{
-		MetricType: "gauge",
-		Storage:    database,
-	}
-	http.Handle("/update/gauge/", handleUpdateGauge)
-
+	// Init Server
 	server := &http.Server{
 		Addr: conf.Address + ":" + conf.Port,
 	}
