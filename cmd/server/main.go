@@ -4,11 +4,8 @@ import (
 	"aprokhorov-praktikum/cmd/server/handlers"
 	"aprokhorov-praktikum/cmd/server/storage"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-
-	yaml "gopkg.in/yaml.v3"
 )
 
 func errHandle(err error) {
@@ -22,17 +19,11 @@ type Config struct {
 	Port    string `yaml:"PORT"`
 }
 
-func (c *Config) getConfig() *Config {
-	yamlFile, err := ioutil.ReadFile("config/config.yaml")
-	errHandle(err)
-	err = yaml.Unmarshal(yamlFile, c)
-	errHandle(err)
-	return c
-}
-
 func main() {
-	var conf Config
-	conf.getConfig()
+	conf := Config{
+		Address: "127.0.0.1",
+		Port:    "8080",
+	}
 
 	database := &storage.MemStorage{}
 	database.Init()
