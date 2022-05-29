@@ -4,19 +4,19 @@ import (
 	"errors"
 )
 
-type Mem_storage struct {
+type MemStorage struct {
 	Metrics struct {
 		Gauge   map[string]Gauge
 		Counter map[string]Counter
 	}
 }
 
-func (ms *Mem_storage) Init() {
+func (ms *MemStorage) Init() {
 	ms.Metrics.Gauge = make(map[string]Gauge)
 	ms.Metrics.Counter = make(map[string]Counter)
 }
 
-func (ms *Mem_storage) Post(name string, value interface{}) error {
+func (ms *MemStorage) Post(name string, value interface{}) error {
 
 	switch data := value.(type) {
 	case Counter:
@@ -30,8 +30,8 @@ func (ms *Mem_storage) Post(name string, value interface{}) error {
 	return nil
 }
 
-func (ms *Mem_storage) Get(value_type string, name string) (interface{}, error) {
-	switch value_type {
+func (ms *MemStorage) Get(valueType string, name string) (interface{}, error) {
+	switch valueType {
 	case "counter":
 		if value, ok := ms.Metrics.Counter[name]; ok {
 			return value, nil

@@ -9,8 +9,8 @@ import (
 )
 
 type HandlerUpdate struct {
-	Metric_type string
-	Storage     storage.Storage
+	MetricType string
+	Storage    storage.Storage
 }
 
 func (h HandlerUpdate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -21,7 +21,7 @@ func (h HandlerUpdate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(error))
 		return
 	}
-	switch h.Metric_type {
+	switch h.MetricType {
 	case "counter":
 		current, err := h.Storage.Get("counter", path[3])
 		if err != nil {
@@ -29,25 +29,25 @@ func (h HandlerUpdate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(fmt.Sprint(err)))
 			return
 		}
-		current_value := current.(storage.Counter)
-		new_value, err := strconv.Atoi(path[4])
+		currentValue := current.(storage.Counter)
+		newValue, err := strconv.Atoi(path[4])
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(fmt.Sprintf("Bad Request, Expected int, got %s", path[4])))
 			return
 		}
-		value := current_value + storage.Counter(new_value)
+		value := currentValue + storage.Counter(newValue)
 		h.Storage.Post(path[3], storage.Counter(value))
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(fmt.Sprintf("Writed %s, previous_value=%d, new value=%d", path[3], current, value)))
 	case "gauge":
-		new_value, err := strconv.ParseFloat(path[4], 64)
+		newValue, err := strconv.ParseFloat(path[4], 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(fmt.Sprintf("Bad Request, Expected float, got %s", path[4])))
 			return
 		}
-		value := storage.Gauge(new_value)
+		value := storage.Gauge(newValue)
 		h.Storage.Post(path[3], value)
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(fmt.Sprintf("Writed %s, new value=%f", path[3], value)))

@@ -23,9 +23,9 @@ type Config struct {
 }
 
 func (c *Config) getConfig() *Config {
-	yaml_file, err := ioutil.ReadFile("config/config.yaml")
+	yamlFile, err := ioutil.ReadFile("config/config.yaml")
 	errHandle(err)
-	err = yaml.Unmarshal(yaml_file, c)
+	err = yaml.Unmarshal(yamlFile, c)
 	errHandle(err)
 	return c
 }
@@ -34,18 +34,18 @@ func main() {
 	var conf Config
 	conf.getConfig()
 
-	database := &storage.Mem_storage{}
+	database := &storage.MemStorage{}
 	database.Init()
 
 	handleUpdateCounter := handlers.HandlerUpdate{
-		Metric_type: "counter",
-		Storage:     database,
+		MetricType: "counter",
+		Storage:    database,
 	}
 	http.Handle("/update/counter/", handleUpdateCounter)
 
 	handleUpdateGauge := handlers.HandlerUpdate{
-		Metric_type: "gauge",
-		Storage:     database,
+		MetricType: "gauge",
+		Storage:    database,
 	}
 	http.Handle("/update/gauge/", handleUpdateGauge)
 

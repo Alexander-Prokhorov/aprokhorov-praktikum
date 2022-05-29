@@ -5,6 +5,7 @@ import (
 	"aprokhorov-praktikum/cmd/agent/sender"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"time"
 
@@ -26,14 +27,15 @@ type Config struct {
 }
 
 func (c *Config) getConfig() *Config {
-	yaml_file, err := ioutil.ReadFile("config/config.yaml")
+	yamlFile, err := ioutil.ReadFile("config/config.yaml")
 	errHandle(err)
-	err = yaml.Unmarshal(yaml_file, c)
+	err = yaml.Unmarshal(yamlFile, c)
 	errHandle(err)
 	return c
 }
 
 func main() {
+	fmt.Println(os.Environ())
 	// Init Config
 	var conf Config
 	conf.getConfig()
@@ -50,15 +52,15 @@ func main() {
 	errHandle(err)
 	sendInterval, err := time.ParseDuration(conf.ReportInterval)
 	errHandle(err)
-	ticker_poll := time.NewTicker(pollInterval)
-	ticker_send := time.NewTicker(sendInterval)
+	tickerPoll := time.NewTicker(pollInterval)
+	tickerSend := time.NewTicker(sendInterval)
 	for {
 		select {
-		case <-ticker_poll.C:
+		case <-tickerPoll.C:
 			NewMetrics.PollMemStats(conf.MemStatMetrics)
 			NewMetrics.RandomMetric()
 			fmt.Println("Poll Count:", NewMetrics.PollCount)
-		case <-ticker_send.C:
+		case <-tickerSend.C:
 			fmt.Println("Send Data to Server")
 			for name, fValue := range NewMetrics.MemStatMetrics {
 				sValue := strconv.FormatFloat(float64(fValue), 'f', -1, 64)
