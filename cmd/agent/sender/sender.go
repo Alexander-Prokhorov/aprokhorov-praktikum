@@ -27,9 +27,9 @@ func (s *Sender) SendMetric(name string, mtype string, value string) error {
 	}
 	request.Header.Set("Content-Type", "text/plain")
 	res, err := s.Client.Do(request)
-	res.Body.Close()
 	if err != nil {
 		return err
 	}
+	res.Body.Close()
 	return nil
 }

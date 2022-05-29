@@ -4,12 +4,8 @@ import (
 	"aprokhorov-praktikum/cmd/agent/poller"
 	"aprokhorov-praktikum/cmd/agent/sender"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"strconv"
 	"time"
-
-	yaml "gopkg.in/yaml.v3"
 )
 
 func errHandle(err error) {
@@ -26,19 +22,43 @@ type Config struct {
 	MemStatMetrics []string `yaml:"MEMSTAT_METRICS"`
 }
 
-func (c *Config) getConfig() *Config {
-	yamlFile, err := ioutil.ReadFile("config/config.yaml")
-	errHandle(err)
-	err = yaml.Unmarshal(yamlFile, c)
-	errHandle(err)
-	return c
-}
-
 func main() {
-	fmt.Println(os.Environ())
 	// Init Config
-	var conf Config
-	conf.getConfig()
+	conf := Config{
+		Server:         "127.0.0.1",
+		Port:           "8080",
+		PollInterval:   "2s",
+		ReportInterval: "10s",
+		MemStatMetrics: []string{
+			"Alloc",
+			"BuckHashSys",
+			"Frees",
+			"GCCPUFraction",
+			"GCSys",
+			"HeapAlloc",
+			"HeapIdle",
+			"HeapInuse",
+			"HeapObjects",
+			"HeapReleased",
+			"HeapSys",
+			"LastGC",
+			"Lookups",
+			"MCacheInuse",
+			"MCacheSys",
+			"MSpanInuse",
+			"MSpanSys",
+			"Mallocs",
+			"NextGC",
+			"NumForcedGC",
+			"NumGC",
+			"OtherSys",
+			"PauseTotalNs",
+			"StackInuse",
+			"StackSys",
+			"Sys",
+			"TotalAlloc",
+		},
+	}
 
 	// Init Sender
 	send := sender.Sender{Server: conf.Server, Port: conf.Port}
@@ -81,7 +101,6 @@ func main() {
 				err := send.SendMetric(name, "counter", value)
 				fmt.Println(err)
 			}("PollCount", sValue)
-
 		}
 	}
 
