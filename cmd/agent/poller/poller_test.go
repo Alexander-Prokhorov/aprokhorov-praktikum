@@ -76,6 +76,7 @@ func TestMetrics_PollMemStats(t *testing.T) {
 			lenWant := len(tt.args.lookupMemStat)
 			lenGot := len(m.MemStatMetrics)
 			assert.Equal(t, lenGot, lenWant)
+			assert.Equal(t, m.PollCount, counter(1))
 		})
 	}
 }

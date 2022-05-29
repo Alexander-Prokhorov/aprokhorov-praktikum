@@ -24,7 +24,6 @@ func (h HandlerUpdate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	switch len(slicePath) {
 	case 4:
-		Path.operation = slicePath[0]
 		Path.metricType = slicePath[1]
 		Path.metricName = slicePath[2]
 		Path.metricValue = slicePath[3]
