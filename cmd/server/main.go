@@ -3,16 +3,11 @@ package main
 import (
 	"aprokhorov-praktikum/cmd/server/handlers"
 	"aprokhorov-praktikum/cmd/server/storage"
-	"fmt"
 	"log"
 	"net/http"
-)
 
-func errHandle(err error) {
-	if err != nil {
-		fmt.Println(err)
-	}
-}
+	"github.com/go-chi/chi"
+)
 
 type Config struct {
 	Address string `yaml:"ADDRESS"`
@@ -30,15 +25,23 @@ func main() {
 	database := &storage.MemStorage{}
 	database.Init()
 
-	// Init Handler
-	handleUpdate := handlers.HandlerUpdate{
-		Storage: database,
-	}
-	http.Handle("/update/", handleUpdate)
+	// Init chi Router and setup Handlers
+	r := chi.NewRouter()
+
+	r.Route("/", func(r chi.Router) {
+		r.Get("/", handlers.GetAll(database))
+		r.Route("/value/{metricType}", func(r chi.Router) {
+			r.Get("/{metricName}", handlers.Get(database))
+		})
+		r.Route("/update/{metricType}", func(r chi.Router) {
+			r.Post("/{metricName}/{metricValue}", handlers.Post(database))
+		})
+	})
 
 	// Init Server
 	server := &http.Server{
-		Addr: conf.Address + ":" + conf.Port,
+		Addr:    conf.Address + ":" + conf.Port,
+		Handler: r,
 	}
 	log.Fatal(server.ListenAndServe())
 }

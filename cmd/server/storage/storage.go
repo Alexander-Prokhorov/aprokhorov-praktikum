@@ -5,6 +5,15 @@ type Counter int64
 
 type Storage interface {
 	Init()
-	Post(metric string, value interface{}) error
-	Get(valueType string, metric string) (interface{}, error)
+	Reader
+	Writer
+}
+
+type Reader interface {
+	Read(valueType string, metric string) (interface{}, error)
+	ReadAll() map[string]map[string]string
+}
+
+type Writer interface {
+	Write(metric string, value interface{}) error
 }
