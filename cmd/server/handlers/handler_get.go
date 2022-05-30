@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"aprokhorov-praktikum/cmd/server/storage"
-	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -36,7 +35,19 @@ func Get(s storage.Reader) http.HandlerFunc {
 
 func GetAll(s storage.Reader) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(s.ReadAll())
-		//w.Write([]byte(totalMetrics))
+		decorator := func(text string, htmlTag string) string {
+			return "<" + htmlTag + ">" + text + "</" + htmlTag + ">"
+		}
+
+		var htmlPage string
+		htmlPage += decorator("All Metrics", "h1")
+		for metricType, metrics := range s.ReadAll() {
+			htmlPage += decorator(metricType, "h2")
+			for metricName, MetricValue := range metrics {
+				htmlPage += decorator(metricName+" = "+MetricValue, "div")
+			}
+		}
+		w.Write([]byte(htmlPage))
+		//json.NewEncoder(w).Encode(s.ReadAll())
 	}
 }
