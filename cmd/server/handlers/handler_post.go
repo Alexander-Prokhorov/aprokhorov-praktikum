@@ -46,9 +46,9 @@ func Post(s storage.Storage) http.HandlerFunc {
 			s.Write(metricName, storage.Gauge(newValue))
 
 		default:
-			// Вернем Not Found, если запросил метрику которая NotImplemented Yet:)
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("404. Not Found (This metric Type doesn't exist)"))
+			// Вернем NotImplemented, если такой тип еще не поддерживается
+			w.WriteHeader(http.StatusNotImplemented)
+			w.Write([]byte("501. Not Implemented Yet :)"))
 		}
 	}
 }
