@@ -88,7 +88,7 @@ func TestPost(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reqUrl := "/" + strings.Join([]string{"update", tt.args.url.mtype, tt.args.url.name, tt.args.url.value}, "/")
+			reqURL := "/" + strings.Join([]string{"update", tt.args.url.mtype, tt.args.url.name, tt.args.url.value}, "/")
 
 			// Заполним базу тестовыми данными
 			tt.args.s.Init()
@@ -97,7 +97,7 @@ func TestPost(t *testing.T) {
 			}
 
 			// Создадим тестовый запрос и рекодер
-			r := httptest.NewRequest(http.MethodPost, reqUrl, nil)
+			r := httptest.NewRequest(http.MethodPost, reqURL, nil)
 			w := httptest.NewRecorder()
 
 			// Init chi Router and setup Handlers
