@@ -88,7 +88,7 @@ func TestPost(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req_url := "/" + strings.Join([]string{"update", tt.args.url.mtype, tt.args.url.name, tt.args.url.value}, "/")
+			reqUrl := "/" + strings.Join([]string{"update", tt.args.url.mtype, tt.args.url.name, tt.args.url.value}, "/")
 
 			// Заполним базу тестовыми данными
 			tt.args.s.Init()
@@ -97,7 +97,7 @@ func TestPost(t *testing.T) {
 			}
 
 			// Создадим тестовый запрос и рекодер
-			r := httptest.NewRequest(http.MethodPost, req_url, nil)
+			r := httptest.NewRequest(http.MethodPost, reqUrl, nil)
 			w := httptest.NewRecorder()
 
 			// Init chi Router and setup Handlers
@@ -120,11 +120,11 @@ func TestPost(t *testing.T) {
 				case storage.Gauge:
 			*/
 			assert.Equal(t, tt.want.code, res.StatusCode)
-			database_value, err := tt.args.s.Read(tt.args.url.mtype, tt.args.url.name)
+			databaseValue, err := tt.args.s.Read(tt.args.url.mtype, tt.args.url.name)
 			if err != nil {
 				t.Error("Can't fetch value from database")
 			}
-			assert.Equal(t, tt.want.value, database_value)
+			assert.Equal(t, tt.want.value, databaseValue)
 			//}
 
 		})
