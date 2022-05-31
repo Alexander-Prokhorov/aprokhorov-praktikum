@@ -107,18 +107,6 @@ func TestPost(t *testing.T) {
 			res := w.Result()
 			defer res.Body.Close()
 
-			/*
-				switch tt.want.value.(type) {
-				case storage.Counter:
-					assert.Equal(t, tt.want.code, res.StatusCode)
-					database_value, err := tt.args.s.Read(tt.args.url.mtype, tt.args.url.name)
-					if err != nil {
-						t.Error("Can't fetch value from database")
-					}
-					assert.Equal(t, tt.want.value, database_value)
-
-				case storage.Gauge:
-			*/
 			assert.Equal(t, tt.want.code, res.StatusCode)
 			databaseValue, err := tt.args.s.Read(tt.args.url.mtype, tt.args.url.name)
 			if err != nil {
