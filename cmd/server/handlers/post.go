@@ -27,28 +27,43 @@ func Post(s storage.Storage) http.HandlerFunc {
 			if err != nil {
 				// Если не можем распарсить возвращаем ошибку
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("400. Bad Request"))
+				_, err := w.Write([]byte("400. Bad Request"))
+				if err != nil {
+					panic(err)
+				}
 			}
 
 			// Добавляем значение к прошлому и записываем в сторадж
 			resultValue := value.(storage.Counter) + storage.Counter(newValue)
-			s.Write(metricName, resultValue)
+			err = s.Write(metricName, resultValue)
+			if err != nil {
+				panic(err)
+			}
 
 		case "gauge":
 			newValue, err := strconv.ParseFloat(metricValue, 64)
 			if err != nil {
 				// Если не можем распарсить возвращаем ошибку
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("400. Bad Request"))
+				_, err := w.Write([]byte("400. Bad Request"))
+				if err != nil {
+					panic(err)
+				}
 			}
 
 			// Просто записываем в сторадж
-			s.Write(metricName, storage.Gauge(newValue))
+			err = s.Write(metricName, storage.Gauge(newValue))
+			if err != nil {
+				panic(err)
+			}
 
 		default:
 			// Вернем NotImplemented, если такой тип еще не поддерживается
 			w.WriteHeader(http.StatusNotImplemented)
-			w.Write([]byte("501. Not Implemented Yet :)"))
+			_, err := w.Write([]byte("501. Not Implemented Yet :)"))
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 }

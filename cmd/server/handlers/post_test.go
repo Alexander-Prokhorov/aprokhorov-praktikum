@@ -93,7 +93,10 @@ func TestPost(t *testing.T) {
 			// Заполним базу тестовыми данными
 			tt.args.s.Init()
 			for _, value := range tt.args.values {
-				tt.args.s.Write(value.name, value.value)
+				err := tt.args.s.Write(value.name, value.value)
+				if err != nil {
+					t.Error(err)
+				}
 			}
 
 			// Создадим тестовый запрос и рекодер

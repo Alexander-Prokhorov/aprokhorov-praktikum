@@ -15,7 +15,10 @@ func Get(s storage.Reader) http.HandlerFunc {
 		value, err := s.Read(metricType, metricName)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("404. Not Found"))
+			_, err = w.Write([]byte("404. Not Found"))
+			if err != nil {
+				panic(err)
+			}
 			return
 		}
 		var respond string
@@ -26,10 +29,16 @@ func Get(s storage.Reader) http.HandlerFunc {
 			respond = strconv.FormatFloat(float64(data), 'f', -1, 64)
 		default:
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("500. Internal Server Error"))
+			_, err := w.Write([]byte("500. Internal Server Error"))
+			if err != nil {
+				panic(err)
+			}
 			return
 		}
-		w.Write([]byte(respond))
+		_, err = w.Write([]byte(respond))
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -47,7 +56,10 @@ func GetAll(s storage.Reader) http.HandlerFunc {
 				htmlPage += decorator(metricName+" = "+MetricValue, "div")
 			}
 		}
-		w.Write([]byte(htmlPage))
+		_, err := w.Write([]byte(htmlPage))
+		if err != nil {
+			panic(err)
+		}
 		//json.NewEncoder(w).Encode(s.ReadAll())
 	}
 }
