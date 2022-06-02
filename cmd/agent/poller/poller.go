@@ -73,7 +73,7 @@ func (p *Poller) PollMemStats(lookupMemStat []string) error {
 	}
 	counter, ok := value.(storage.Counter)
 	if !ok {
-		return errors.New("Can't update counter, it's not a Counter")
+		return errors.New("can't update counter, it's not a counter")
 	}
 	counter++
 	err = p.Storage.Write("PollCount", counter)
