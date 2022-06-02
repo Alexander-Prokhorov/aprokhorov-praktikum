@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"strconv"
+	"log"
 	"time"
 
 	"aprokhorov-praktikum/cmd/agent/config"
@@ -10,9 +10,9 @@ import (
 	"aprokhorov-praktikum/cmd/agent/sender"
 )
 
-func errHandle(err error) {
+func errHandle(text string, err error) {
 	if err != nil {
-		fmt.Println(err)
+		log.Printf(text, err)
 	}
 }
 
@@ -26,46 +26,44 @@ func main() {
 	send.Init()
 
 	// Init Poller
-	NewMetrics := new(poller.Metrics)
+	NewMetrics := new(poller.Poller)
+	NewMetrics.Init()
 
 	// Poll and Send
 	pollInterval, err := time.ParseDuration(conf.PollInterval)
-	errHandle(err)
+	errHandle("Config parse error: %s", err)
+
 	sendInterval, err := time.ParseDuration(conf.ReportInterval)
-	errHandle(err)
+	errHandle("Config parse error: %s", err)
+
 	tickerPoll := time.NewTicker(pollInterval)
 	tickerSend := time.NewTicker(sendInterval)
 	for {
 		select {
 		case <-tickerPoll.C:
 			err = NewMetrics.PollMemStats(conf.MemStatMetrics)
-			if err != nil {
-				fmt.Println("Can't fetch metrics")
-			}
-			NewMetrics.RandomMetric()
-			fmt.Println("Poll Count:", NewMetrics.PollCount)
+			errHandle("Poller error: %s", err)
+
+			err := NewMetrics.PollRandomMetric()
+			errHandle("Poller error: %s", err)
+
+			counter, err := NewMetrics.Storage.Read("counter", "PollCount")
+			errHandle("Poller error: %s", err)
+
+			fmt.Println("Poll Count:", counter)
+
 		case <-tickerSend.C:
 			fmt.Println("Send Data to Server")
-			for name, fValue := range NewMetrics.MemStatMetrics {
-				sValue := strconv.FormatFloat(float64(fValue), 'f', -1, 64)
-				go func(name string, value string) {
-					err := send.SendMetric(name, "guage", value)
-					fmt.Println(err)
-				}(name, sValue)
+
+			for metricType, values := range NewMetrics.Storage.ReadAll() {
+				for metricName, metricValue := range values {
+					go func(mtype string, name string, value string) {
+						err := send.SendMetric(mtype, name, value)
+						errHandle("Sender error: %s", err)
+					}(metricType, metricName, metricValue)
+				}
+
 			}
-
-			sValue := strconv.FormatFloat(float64(NewMetrics.RandomValue), 'f', -1, 64)
-			go func(name string, value string) {
-				err := send.SendMetric(name, "guage", value)
-				fmt.Println(err)
-			}("RandomValue", sValue)
-
-			sValue = strconv.Itoa(int(NewMetrics.PollCount))
-			go func(name string, value string) {
-				err := send.SendMetric(name, "counter", value)
-				fmt.Println(err)
-			}("PollCount", sValue)
 		}
 	}
-
 }

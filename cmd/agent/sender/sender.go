@@ -26,7 +26,7 @@ func (s *Sender) Init() {
 	s.URL.Host = s.Server + ":" + s.Port
 }
 
-func (s *Sender) SendMetric(name string, mtype string, value string) error {
+func (s *Sender) SendMetric(mtype string, name string, value string) error {
 	s.URL.Path = "update/" + mtype + "/" + name + "/" + value
 	request, err := http.NewRequest(http.MethodPost, s.URL.String(), nil)
 	if err != nil {

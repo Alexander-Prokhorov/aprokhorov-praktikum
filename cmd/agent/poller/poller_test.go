@@ -1,19 +1,21 @@
 package poller
 
 import (
+	"fmt"
 	"testing"
+
+	"aprokhorov-praktikum/cmd/agent/config"
+	"aprokhorov-praktikum/cmd/server/storage"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMetrics_PollMemStats(t *testing.T) {
 	type fields struct {
-		MemStatMetrics map[string]gauge
-		PollCount      counter
-		RandomValue    gauge
+		poller Poller
 	}
 	type args struct {
-		lookupMemStat []string
+		config config.Config
 	}
 	tests := []struct {
 		name    string
@@ -24,59 +26,37 @@ func TestMetrics_PollMemStats(t *testing.T) {
 		{
 			name: "Test for empty Data",
 			fields: fields{
-				MemStatMetrics: make(map[string]gauge),
-				PollCount:      counter(0),
-				RandomValue:    gauge(0),
+				poller: Poller{},
 			},
 			args: args{
-				lookupMemStat: []string{
-					"Alloc",
-					"BuckHashSys",
-					"Frees",
-					"GCCPUFraction",
-					"GCSys",
-					"HeapAlloc",
-					"HeapIdle",
-					"HeapInuse",
-					"HeapObjects",
-					"HeapReleased",
-					"HeapSys",
-					"LastGC",
-					"Lookups",
-					"MCacheInuse",
-					"MCacheSys",
-					"MSpanInuse",
-					"MSpanSys",
-					"Mallocs",
-					"NextGC",
-					"NumForcedGC",
-					"NumGC",
-					"OtherSys",
-					"PauseTotalNs",
-					"StackInuse",
-					"StackSys",
-					"Sys",
-					"TotalAlloc",
-				},
+				config: config.Config{},
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &Metrics{
-				MemStatMetrics: tt.fields.MemStatMetrics,
-				PollCount:      tt.fields.PollCount,
-				RandomValue:    tt.fields.RandomValue,
-			}
-			err := m.PollMemStats(tt.args.lookupMemStat)
+
+			tt.args.config.InitDefaults()
+			tt.fields.poller.Init()
+
+			err := tt.fields.poller.PollMemStats(tt.args.config.MemStatMetrics)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Metrics.PollMemStats() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Poller.PollMemStats() error = %v, wantErr %v", tt.wantErr, err)
 			}
-			lenWant := len(tt.args.lookupMemStat)
-			lenGot := len(m.MemStatMetrics)
-			assert.Equal(t, lenGot, lenWant)
-			assert.Equal(t, m.PollCount, counter(1))
+
+			lenWant := len(tt.args.config.MemStatMetrics)
+
+			gaugeValues := tt.fields.poller.Storage.ReadAll()["gauge"]
+			fmt.Print(gaugeValues)
+			lenGot := len(gaugeValues)
+			assert.Equal(t, lenWant, lenGot)
+
+			pollCount, err := tt.fields.poller.Storage.Read("counter", "PollCount")
+			if err != nil {
+				t.Error(err)
+			}
+			assert.Equal(t, storage.Counter(1), pollCount)
 		})
 	}
 }

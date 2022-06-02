@@ -65,7 +65,7 @@ func TestSender_SendMetric(t *testing.T) {
 			}
 			s.Init()
 
-			if err := s.SendMetric(tt.args.name, tt.args.mtype, tt.args.value); (err != nil) != tt.wantErr {
+			if err := s.SendMetric(tt.args.mtype, tt.args.name, tt.args.value); (err != nil) != tt.wantErr {
 				t.Errorf("Sender.SendMetric() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			assert.Equal(t, s.URL.Path, tt.want.path)
