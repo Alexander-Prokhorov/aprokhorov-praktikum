@@ -1,6 +1,7 @@
 package main
 
 import (
+	"aprokhorov-praktikum/cmd/agent/config"
 	"aprokhorov-praktikum/cmd/agent/poller"
 	"aprokhorov-praktikum/cmd/agent/sender"
 	"fmt"
@@ -14,51 +15,10 @@ func errHandle(err error) {
 	}
 }
 
-type Config struct {
-	Server         string   `yaml:"SERVER"`
-	Port           string   `yaml:"PORT"`
-	PollInterval   string   `yaml:"POOL_INTERVAL"`
-	ReportInterval string   `yaml:"REPORT_INTERVAL"`
-	MemStatMetrics []string `yaml:"MEMSTAT_METRICS"`
-}
-
 func main() {
 	// Init Config
-	conf := Config{
-		Server:         "127.0.0.1",
-		Port:           "8080",
-		PollInterval:   "2s",
-		ReportInterval: "10s",
-		MemStatMetrics: []string{
-			"Alloc",
-			"BuckHashSys",
-			"Frees",
-			"GCCPUFraction",
-			"GCSys",
-			"HeapAlloc",
-			"HeapIdle",
-			"HeapInuse",
-			"HeapObjects",
-			"HeapReleased",
-			"HeapSys",
-			"LastGC",
-			"Lookups",
-			"MCacheInuse",
-			"MCacheSys",
-			"MSpanInuse",
-			"MSpanSys",
-			"Mallocs",
-			"NextGC",
-			"NumForcedGC",
-			"NumGC",
-			"OtherSys",
-			"PauseTotalNs",
-			"StackInuse",
-			"StackSys",
-			"Sys",
-			"TotalAlloc",
-		},
-	}
+	conf := config.Config{}
+	conf.InitDefaults()
 
 	// Init Sender
 	send := sender.Sender{Server: conf.Server, Port: conf.Port}
@@ -77,7 +37,10 @@ func main() {
 	for {
 		select {
 		case <-tickerPoll.C:
-			NewMetrics.PollMemStats(conf.MemStatMetrics)
+			err = NewMetrics.PollMemStats(conf.MemStatMetrics)
+			if err != nil {
+				fmt.Println("Can't fetch metrics")
+			}
 			NewMetrics.RandomMetric()
 			fmt.Println("Poll Count:", NewMetrics.PollCount)
 		case <-tickerSend.C:

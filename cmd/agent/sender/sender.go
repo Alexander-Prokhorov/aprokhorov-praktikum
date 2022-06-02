@@ -3,6 +3,7 @@ package sender
 import (
 	"net/http"
 	"net/url"
+	"time"
 )
 
 type Sender struct {
@@ -13,7 +14,13 @@ type Sender struct {
 }
 
 func (s *Sender) Init() {
-	s.Client = http.Client{}
+	s.Client = http.Client{
+		Timeout: 5 * time.Second,
+		Transport: &http.Transport{
+			MaxIdleConns:    5,
+			IdleConnTimeout: 5,
+		},
+	}
 	s.URL = *new(url.URL)
 	s.URL.Scheme = "http"
 	s.URL.Host = s.Server + ":" + s.Port

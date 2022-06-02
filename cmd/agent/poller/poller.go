@@ -33,7 +33,10 @@ func (m *Metrics) PollMemStats(lookupMemStat []string) error {
 	if err != nil {
 		return err
 	}
-	json.Unmarshal(jsonMemStats, &mapInterface)
+	err = json.Unmarshal(jsonMemStats, &mapInterface)
+	if err != nil {
+		return err
+	}
 	// Выбираем только интересующие нас метрики
 	// Сразу конвертруем их в gauge-тип
 	for _, metric := range lookupMemStat {
