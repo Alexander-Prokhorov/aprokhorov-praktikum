@@ -1,12 +1,13 @@
 package main
 
 import (
-	"aprokhorov-praktikum/cmd/agent/config"
-	"aprokhorov-praktikum/cmd/agent/poller"
-	"aprokhorov-praktikum/cmd/agent/sender"
 	"fmt"
 	"strconv"
 	"time"
+
+	"aprokhorov-praktikum/cmd/agent/config"
+	"aprokhorov-praktikum/cmd/agent/poller"
+	"aprokhorov-praktikum/cmd/agent/sender"
 )
 
 func errHandle(err error) {

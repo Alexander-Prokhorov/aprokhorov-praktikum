@@ -1,12 +1,13 @@
 package handlers_test
 
 import (
-	"aprokhorov-praktikum/cmd/server/handlers"
-	"aprokhorov-praktikum/cmd/server/storage"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"aprokhorov-praktikum/cmd/server/handlers"
+	"aprokhorov-praktikum/cmd/server/storage"
 
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"

@@ -1,10 +1,11 @@
 package main
 
 import (
-	"aprokhorov-praktikum/cmd/server/handlers"
-	"aprokhorov-praktikum/cmd/server/storage"
 	"log"
 	"net/http"
+
+	"aprokhorov-praktikum/cmd/server/handlers"
+	"aprokhorov-praktikum/cmd/server/storage"
 
 	"github.com/go-chi/chi"
 )
