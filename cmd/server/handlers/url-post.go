@@ -40,6 +40,8 @@ func Post(s storage.Storage) http.HandlerFunc {
 		if err != nil {
 			return
 		}
+		w.Header().Set("Content-Type", "plain/text")
+		http.Error(w, "", http.StatusOK)
 	}
 }
 
