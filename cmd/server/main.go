@@ -31,11 +31,13 @@ func main() {
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAll(database))
-		r.Route("/value/{metricType}", func(r chi.Router) {
-			r.Get("/{metricName}", handlers.Get(database))
+		r.Route("/value", func(r chi.Router) {
+			r.Post("/", handlers.JsonRead(database))
+			r.Get("/{metricType}/{metricName}", handlers.Get(database))
 		})
-		r.Route("/update/{metricType}", func(r chi.Router) {
-			r.Post("/{metricName}/{metricValue}", handlers.Post(database))
+		r.Route("/update", func(r chi.Router) {
+			r.Post("/", handlers.JsonUpdate(database))
+			r.Post("/{metricType}/{metricName}/{metricValue}", handlers.Post(database))
 		})
 	})
 
