@@ -27,8 +27,15 @@ func main() {
 	NewMetrics := poller.NewAgentPoller()
 
 	// Poll and Send
-	tickerPoll := time.NewTicker(time.Duration(conf.PollInterval) * time.Second)
-	tickerSend := time.NewTicker(time.Duration(conf.SendInterval) * time.Second)
+	pollInterval, err := time.ParseDuration(conf.PollInterval)
+	errHandle("Config parse error: %s", err)
+
+	sendInterval, err := time.ParseDuration(conf.SendInterval)
+	errHandle("Config parse error: %s", err)
+
+	tickerPoll := time.NewTicker(pollInterval)
+	tickerSend := time.NewTicker(sendInterval)
+
 	for {
 		select {
 		case <-tickerPoll.C:

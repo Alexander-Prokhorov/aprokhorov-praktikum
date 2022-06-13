@@ -10,8 +10,8 @@ import (
 type Config struct {
 	Server         string   `yaml:"SERVER"`
 	Port           string   `yaml:"PORT"`
-	PollInterval   int8     `yaml:"POOL_INTERVAL"`
-	SendInterval   int8     `yaml:"REPORT_INTERVAL"`
+	PollInterval   string   `yaml:"POOL_INTERVAL"`
+	SendInterval   string   `yaml:"REPORT_INTERVAL"`
 	MemStatMetrics []string `yaml:"MEMSTAT_METRICS"`
 }
 
@@ -20,8 +20,8 @@ func NewAgentConfig() *Config {
 
 	var envVar struct {
 		Addr           string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
-		PollInterval   int8   `env:"POLL_INTERVAL" envDefault:"2"`
-		ReportInterval int8   `env:"REPORT_INTERVAL" envDefault:"10"`
+		PollInterval   string `env:"POLL_INTERVAL" envDefault:"2"`
+		ReportInterval string `env:"REPORT_INTERVAL" envDefault:"10"`
 	}
 	err := env.Parse(&envVar)
 	if err != nil {
