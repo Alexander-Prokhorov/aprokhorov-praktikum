@@ -20,8 +20,8 @@ func NewAgentConfig() *Config {
 
 	var envVar struct {
 		Addr           string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
-		PollInterval   string `env:"POLL_INTERVAL" envDefault:"2"`
-		ReportInterval string `env:"REPORT_INTERVAL" envDefault:"10"`
+		PollInterval   string `env:"POLL_INTERVAL" envDefault:"2s"`
+		ReportInterval string `env:"REPORT_INTERVAL" envDefault:"10s"`
 	}
 	err := env.Parse(&envVar)
 	if err != nil {
