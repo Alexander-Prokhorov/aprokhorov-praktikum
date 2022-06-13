@@ -59,11 +59,7 @@ func TestSender_SendMetricURL(t *testing.T) {
 			params := strings.Split(serverPort, ":")
 
 			// Init Sender Client
-			s := Sender{
-				Server: params[0],
-				Port:   params[1],
-			}
-			s.Init()
+			s := NewAgentSender(params[0], params[1])
 
 			if err := s.SendMetricURL(tt.args.mtype, tt.args.name, tt.args.value); (err != nil) != tt.wantErr {
 				t.Errorf("Sender.SendMetric() error = %v, wantErr %v", err, tt.wantErr)
@@ -121,11 +117,7 @@ func TestSender_SendMetricJSON(t *testing.T) {
 			params := strings.Split(serverPort, ":")
 
 			// Init Sender Client
-			s := Sender{
-				Server: params[0],
-				Port:   params[1],
-			}
-			s.Init()
+			s := NewAgentSender(params[0], params[1])
 
 			if err := s.SendMetricJSON(tt.args.mtype, tt.args.name, tt.args.value); (err != nil) != tt.wantErr {
 				t.Errorf("Sender.SendMetric() error = %v, wantErr %v", err, tt.wantErr)

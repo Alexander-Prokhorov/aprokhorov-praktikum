@@ -21,7 +21,7 @@ func JSONUpdate(s storage.Storage) http.HandlerFunc {
 		var jReq Metrics
 
 		if err := json.NewDecoder(r.Body).Decode(&jReq); err != nil {
-			http.Error(w, err.Error()+"MYError", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 

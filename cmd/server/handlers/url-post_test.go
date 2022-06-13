@@ -92,7 +92,7 @@ func TestPost(t *testing.T) {
 			reqURL := "/" + strings.Join([]string{"update", tt.args.url.mtype, tt.args.url.name, tt.args.url.value}, "/")
 
 			// Заполним базу тестовыми данными
-			tt.args.s.Init()
+			tt.args.s = storage.NewStorageMem()
 			for _, value := range tt.args.values {
 				err := tt.args.s.Write(value.name, value.value)
 				if err != nil {

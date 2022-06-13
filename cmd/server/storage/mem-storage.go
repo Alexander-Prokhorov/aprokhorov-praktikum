@@ -14,10 +14,12 @@ type MemStorage struct {
 	mutex *sync.RWMutex
 }
 
-func (ms *MemStorage) Init() {
+func NewStorageMem() *MemStorage {
+	var ms MemStorage
 	ms.Metrics.Gauge = make(map[string]Gauge)
 	ms.Metrics.Counter = make(map[string]Counter)
 	ms.mutex = &sync.RWMutex{}
+	return &ms
 }
 
 func (ms *MemStorage) Write(metricName string, value interface{}) error {

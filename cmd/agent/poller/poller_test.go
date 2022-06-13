@@ -37,8 +37,8 @@ func TestMetrics_PollMemStats(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			tt.args.config.InitDefaults()
-			tt.fields.poller.Init()
+			tt.args.config = *config.NewAgentConfig()
+			tt.fields.poller = *NewAgentPoller()
 
 			err := tt.fields.poller.PollMemStats(tt.args.config.MemStatMetrics)
 			if (err != nil) != tt.wantErr {

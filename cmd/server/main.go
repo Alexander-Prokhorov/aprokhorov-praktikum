@@ -4,27 +4,19 @@ import (
 	"log"
 	"net/http"
 
+	"aprokhorov-praktikum/cmd/server/config"
 	"aprokhorov-praktikum/cmd/server/handlers"
 	"aprokhorov-praktikum/cmd/server/storage"
 
 	"github.com/go-chi/chi"
 )
 
-type Config struct {
-	Address string `yaml:"ADDRESS"`
-	Port    string `yaml:"PORT"`
-}
-
 func main() {
 	// Init Config
-	conf := Config{
-		Address: "127.0.0.1",
-		Port:    "8080",
-	}
+	conf := config.NewServerConfig()
 
 	// Init Storage
-	database := &storage.MemStorage{}
-	database.Init()
+	database := storage.NewStorageMem()
 
 	// Init chi Router and setup Handlers
 	r := chi.NewRouter()

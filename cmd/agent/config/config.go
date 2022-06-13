@@ -1,19 +1,46 @@
 package config
 
+import (
+	"log"
+	"strings"
+
+	"github.com/caarlos0/env/v6"
+)
+
 type Config struct {
 	Server         string   `yaml:"SERVER"`
 	Port           string   `yaml:"PORT"`
-	PollInterval   string   `yaml:"POOL_INTERVAL"`
-	ReportInterval string   `yaml:"REPORT_INTERVAL"`
+	PollInterval   int8     `yaml:"POOL_INTERVAL"`
+	SendInterval   int8     `yaml:"REPORT_INTERVAL"`
 	MemStatMetrics []string `yaml:"MEMSTAT_METRICS"`
 }
 
-func (c *Config) InitDefaults() {
-	c.Server = "127.0.0.1"
-	c.Port = "8080"
-	c.PollInterval = "2s"
-	c.ReportInterval = "10s"
-	c.MemStatMetrics = []string{
+func NewAgentConfig() *Config {
+	var c Config
+
+	var envVar struct {
+		Addr           string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
+		PollInterval   int8   `env:"POLL_INTERVAL" envDefault:"2"`
+		ReportInterval int8   `env:"REPORT_INTERVAL" envDefault:"10"`
+	}
+	err := env.Parse(&envVar)
+	if err != nil {
+		log.Fatal(nil)
+	}
+	varChain := strings.Split(envVar.Addr, ":")
+
+	c.Server = varChain[0]
+	c.Port = varChain[1]
+
+	c.PollInterval = envVar.PollInterval
+	c.SendInterval = envVar.ReportInterval
+	c.MemStatMetrics = sliceMemStat()
+
+	return &c
+}
+
+func sliceMemStat() []string {
+	return []string{
 		"Alloc",
 		"BuckHashSys",
 		"Frees",

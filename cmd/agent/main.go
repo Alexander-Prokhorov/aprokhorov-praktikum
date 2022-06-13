@@ -18,33 +18,24 @@ func errHandle(text string, err error) {
 
 func main() {
 	// Init Config
-	conf := config.Config{}
-	conf.InitDefaults()
+	conf := config.NewAgentConfig()
 
 	// Init Sender
-	send := sender.Sender{Server: conf.Server, Port: conf.Port}
-	send.Init()
+	send := sender.NewAgentSender(conf.Server, conf.Port)
 
 	// Init Poller
-	NewMetrics := new(poller.Poller)
-	NewMetrics.Init()
+	NewMetrics := poller.NewAgentPoller()
 
 	// Poll and Send
-	pollInterval, err := time.ParseDuration(conf.PollInterval)
-	errHandle("Config parse error: %s", err)
-
-	sendInterval, err := time.ParseDuration(conf.ReportInterval)
-	errHandle("Config parse error: %s", err)
-
-	tickerPoll := time.NewTicker(pollInterval)
-	tickerSend := time.NewTicker(sendInterval)
+	tickerPoll := time.NewTicker(time.Duration(conf.PollInterval) * time.Second)
+	tickerSend := time.NewTicker(time.Duration(conf.SendInterval) * time.Second)
 	for {
 		select {
 		case <-tickerPoll.C:
-			err = NewMetrics.PollMemStats(conf.MemStatMetrics)
+			err := NewMetrics.PollMemStats(conf.MemStatMetrics)
 			errHandle("Poller error: %s", err)
 
-			err := NewMetrics.PollRandomMetric()
+			err = NewMetrics.PollRandomMetric()
 			errHandle("Poller error: %s", err)
 
 			counter, err := NewMetrics.Storage.Read("counter", "PollCount")

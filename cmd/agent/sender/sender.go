@@ -16,7 +16,8 @@ type Sender struct {
 	Client http.Client
 }
 
-func (s *Sender) Init() {
+func NewAgentSender(server string, port string) *Sender {
+	var s Sender
 	s.Client = http.Client{
 		Timeout: 5 * time.Second,
 		Transport: &http.Transport{
@@ -26,7 +27,9 @@ func (s *Sender) Init() {
 	}
 	s.URL = *new(url.URL)
 	s.URL.Scheme = "http"
-	s.URL.Host = s.Server + ":" + s.Port
+	s.URL.Host = server + ":" + port
+
+	return &s
 }
 
 func (s *Sender) SendMetric(mtype string, name string, value string) error {

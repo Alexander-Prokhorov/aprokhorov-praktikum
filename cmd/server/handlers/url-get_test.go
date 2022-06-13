@@ -61,7 +61,7 @@ func TestGet(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// Заполним базу тестовыми данными
-			tt.args.s.Init()
+			tt.args.s = storage.NewStorageMem()
 			for _, value := range tt.args.values {
 				err := tt.args.s.Write(value.name, value.value)
 				if err != nil {
