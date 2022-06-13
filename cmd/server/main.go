@@ -32,11 +32,11 @@ func main() {
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAll(database))
 		r.Route("/value", func(r chi.Router) {
-			r.Post("/", handlers.JsonRead(database))
+			r.Post("/", handlers.JSONRead(database))
 			r.Get("/{metricType}/{metricName}", handlers.Get(database))
 		})
 		r.Route("/update", func(r chi.Router) {
-			r.Post("/", handlers.JsonUpdate(database))
+			r.Post("/", handlers.JSONUpdate(database))
 			r.Post("/{metricType}/{metricName}/{metricValue}", handlers.Post(database))
 		})
 	})

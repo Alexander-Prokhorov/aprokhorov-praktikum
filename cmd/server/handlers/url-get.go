@@ -29,7 +29,7 @@ func Get(s storage.Reader) http.HandlerFunc {
 			respond = *req.Value
 		}
 
-		_, err = w.Write([]byte(fmt.Sprintf("%s;%s;%v", req.MType, req.ID, respond)))
+		_, err = w.Write([]byte(fmt.Sprintf("%v", respond)))
 		if err != nil {
 			panic(err)
 		}

@@ -8,14 +8,15 @@ import (
 	"aprokhorov-praktikum/cmd/server/storage"
 )
 
-func JsonRead(s storage.Storage) http.HandlerFunc {
+func JSONRead(s storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Header.Get("Content-Type") != "application/json" {
-			error_text := fmt.Sprintf("only application/json supported, get %s", r.Header.Get("Content-Type"))
-			http.Error(w, error_text, http.StatusNotImplemented)
+			errorText := fmt.Sprintf("only application/json supported, get %s", r.Header.Get("Content-Type"))
+			http.Error(w, errorText, http.StatusNotImplemented)
 			return
 		}
+		w.Header().Set("Content-Type", "application/json")
 
 		var jReq Metrics
 

@@ -86,7 +86,7 @@ func updateHelper(w http.ResponseWriter, s storage.Storage, m *Metrics) error {
 	default:
 		// Вернем NotImplemented, если такой тип еще не поддерживается
 		http.Error(w, "501. Not Implemented Yet :)", http.StatusNotImplemented)
-		return errors.New("Not implemented method")
+		return errors.New("not implemented method")
 	}
 	return nil
 }
