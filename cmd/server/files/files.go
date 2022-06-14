@@ -25,14 +25,11 @@ func SaveData(fileName string, s storage.Storage) error {
 
 func LoadData(fileName string, s storage.Storage) error {
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
-	if err != nil {
-		return err
+	if err == nil {
+		defer file.Close()
+		if err := json.NewDecoder(file).Decode(s); err != nil {
+			return err
+		}
 	}
-	defer file.Close()
-
-	if err := json.NewDecoder(file).Decode(s); err != nil {
-		return err
-	}
-
 	return nil
 }
