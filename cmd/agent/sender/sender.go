@@ -16,7 +16,7 @@ type Sender struct {
 	Client http.Client
 }
 
-func NewAgentSender(server string, port string) *Sender {
+func NewAgentSender(address string) *Sender {
 	var s Sender
 	s.Client = http.Client{
 		Timeout: 5 * time.Second,
@@ -27,7 +27,7 @@ func NewAgentSender(server string, port string) *Sender {
 	}
 	s.URL = *new(url.URL)
 	s.URL.Scheme = "http"
-	s.URL.Host = server + ":" + port
+	s.URL.Host = address
 
 	return &s
 }

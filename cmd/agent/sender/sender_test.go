@@ -13,10 +13,9 @@ import (
 
 func TestSender_SendMetricURL(t *testing.T) {
 	type fields struct {
-		Server string
-		Port   string
-		URL    url.URL
-		Client http.Client
+		Address string
+		URL     url.URL
+		Client  http.Client
 	}
 	type args struct {
 		name  string
@@ -36,7 +35,7 @@ func TestSender_SendMetricURL(t *testing.T) {
 	}{
 		{
 			name:    "First Test Sender",
-			fields:  fields{Server: "127.0.0.1", Port: "8080"},
+			fields:  fields{Address: "127.0.0.1:8080"},
 			args:    args{name: "TestMetric", mtype: "counter", value: "1"},
 			wantErr: false,
 			want:    want{path: "update/counter/TestMetric/1"},
@@ -55,11 +54,10 @@ func TestSender_SendMetricURL(t *testing.T) {
 			defer testServer.Close()
 
 			// Get Test Server address:port
-			serverPort := strings.Replace(testServer.URL, "http://", "", -1)
-			params := strings.Split(serverPort, ":")
+			params := strings.Split(testServer.URL, "/")
 
 			// Init Sender Client
-			s := NewAgentSender(params[0], params[1])
+			s := NewAgentSender(params[2])
 
 			if err := s.SendMetricURL(tt.args.mtype, tt.args.name, tt.args.value); (err != nil) != tt.wantErr {
 				t.Errorf("Sender.SendMetric() error = %v, wantErr %v", err, tt.wantErr)
@@ -71,10 +69,9 @@ func TestSender_SendMetricURL(t *testing.T) {
 
 func TestSender_SendMetricJSON(t *testing.T) {
 	type fields struct {
-		Server string
-		Port   string
-		URL    url.URL
-		Client http.Client
+		Address string
+		URL     url.URL
+		Client  http.Client
 	}
 	type args struct {
 		name  string
@@ -94,7 +91,7 @@ func TestSender_SendMetricJSON(t *testing.T) {
 	}{
 		{
 			name:    "JSON Test Sender",
-			fields:  fields{Server: "127.0.0.1", Port: "8080"},
+			fields:  fields{Address: "127.0.0.0:8080"},
 			args:    args{name: "TestMetric", mtype: "counter", value: "1"},
 			wantErr: false,
 			want:    want{path: "update"},
@@ -113,11 +110,10 @@ func TestSender_SendMetricJSON(t *testing.T) {
 			defer testServer.Close()
 
 			// Get Test Server address:port
-			serverPort := strings.Replace(testServer.URL, "http://", "", -1)
-			params := strings.Split(serverPort, ":")
+			params := strings.Split(testServer.URL, "/")
 
 			// Init Sender Client
-			s := NewAgentSender(params[0], params[1])
+			s := NewAgentSender(params[2])
 
 			if err := s.SendMetricJSON(tt.args.mtype, tt.args.name, tt.args.value); (err != nil) != tt.wantErr {
 				t.Errorf("Sender.SendMetric() error = %v, wantErr %v", err, tt.wantErr)

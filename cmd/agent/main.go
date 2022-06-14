@@ -38,7 +38,7 @@ func main() {
 	flag.Parse()
 
 	// Init Sender
-	send := sender.NewAgentSender(conf.Server, conf.Port)
+	send := sender.NewAgentSender(conf.Address)
 
 	// Init Poller
 	NewMetrics := poller.NewAgentPoller()

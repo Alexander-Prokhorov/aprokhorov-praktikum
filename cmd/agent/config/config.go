@@ -2,7 +2,6 @@ package config
 
 import (
 	"log"
-	"strings"
 
 	"github.com/caarlos0/env/v6"
 )
@@ -23,10 +22,6 @@ func NewAgentConfig() *Config {
 	if err != nil {
 		log.Fatal(nil)
 	}
-	varChain := strings.Split(c.Address, ":")
-
-	c.Server = varChain[0]
-	c.Port = varChain[1]
 
 	c.MemStatMetrics = sliceMemStat()
 
