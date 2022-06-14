@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"time"
@@ -16,9 +17,25 @@ func errHandle(text string, err error) {
 	}
 }
 
-func main() {
+var conf *config.Config
+
+func init() {
 	// Init Config
-	conf := config.NewAgentConfig()
+	conf = config.NewAgentConfig()
+
+	// Init flags
+	conf.Address = *flag.String("a", "127.0.0.0:8080", "An ip address for server run")
+	conf.SendInterval = *flag.String("r", "10s", "Report Interval")
+	conf.PollInterval = *flag.String("p", "2s", "Poll Interval")
+
+	// Re-init for Env vars
+	conf = config.NewAgentConfig()
+
+}
+
+func main() {
+	//Init Flags
+	flag.Parse()
 
 	// Init Sender
 	send := sender.NewAgentSender(conf.Server, conf.Port)

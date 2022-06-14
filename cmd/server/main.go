@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,9 +18,25 @@ import (
 	"github.com/go-chi/chi"
 )
 
-func main() {
+var conf *config.Config
+
+func init() {
 	// Init Config
-	conf := config.NewServerConfig()
+	conf = config.NewServerConfig()
+
+	// Init flags
+	conf.Address = *flag.String("a", "127.0.0.0:8080", "An ip address for server run")
+	conf.Restore = *flag.Bool("r", true, "Restore Metrics from file?")
+	conf.StoreInterval = *flag.String("i", "300s", "Interval for storing Data to file")
+	conf.StoreFile = *flag.String("f", "/tmp/devops-metrics-db.json", "File path to store Data")
+
+	// Re-init for Env vars
+	conf = config.NewServerConfig()
+}
+
+func main() {
+	// Init Flags
+	flag.Parse()
 
 	// Init Storage
 	database := storage.NewStorageMem()
@@ -77,7 +94,7 @@ func main() {
 
 	// Init Server
 	server := &http.Server{
-		Addr:    conf.Server + ":" + conf.Port,
+		Addr:    conf.Address,
 		Handler: r,
 	}
 

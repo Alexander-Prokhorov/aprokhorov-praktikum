@@ -11,9 +11,9 @@ type Config struct {
 	MemStatMetrics []string
 	Server         string
 	Port           string
-	Address        string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
-	PollInterval   string `env:"POLL_INTERVAL" envDefault:"2s"`
-	SendInterval   string `env:"REPORT_INTERVAL" envDefault:"10s"`
+	Address        string `env:"ADDRESS"`         //envDefault:"127.0.0.1:8080"`
+	PollInterval   string `env:"POLL_INTERVAL"`   //envDefault:"2s"`
+	SendInterval   string `env:"REPORT_INTERVAL"` //envDefault:"10s"`
 }
 
 func NewAgentConfig() *Config {
