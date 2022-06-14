@@ -24,7 +24,7 @@ func init() {
 	conf = config.NewAgentConfig()
 
 	// Init flags
-	flag.StringVar(&conf.Address, "a", "127.0.0.0:8080", "An ip address for server run")
+	flag.StringVar(&conf.Address, "a", "127.0.0.1:8080", "An ip address for server run")
 	flag.StringVar(&conf.SendInterval, "r", "10s", "Report Interval")
 	flag.StringVar(&conf.PollInterval, "p", "2s", "Poll Interval")
 }
