@@ -8,21 +8,22 @@ import (
 )
 
 type Config struct {
-	Address string `env:"ADDRESS"`
-	Port    string `yaml:"PORT"`
+	Server        string
+	Port          string
+	Address       string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
+	StoreInterval string `env:"STORE_INTERVAL" envDefault:"3s"`
+	StoreFile     string `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
+	Restore       bool   `env:"RESTORE" envDefault:"true"`
 }
 
 func NewServerConfig() *Config {
 	var c Config
 
-	var envVar struct {
-		Addr string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
-	}
-	err := env.Parse(&envVar)
+	err := env.Parse(&c)
 	if err != nil {
 		log.Fatal(nil)
 	}
-	varChain := strings.Split(envVar.Addr, ":")
+	varChain := strings.Split(c.Address, ":")
 
 	c.Address = varChain[0]
 	c.Port = varChain[1]

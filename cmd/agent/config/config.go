@@ -8,32 +8,26 @@ import (
 )
 
 type Config struct {
-	Server         string   `yaml:"SERVER"`
-	Port           string   `yaml:"PORT"`
-	PollInterval   string   `yaml:"POOL_INTERVAL"`
-	SendInterval   string   `yaml:"REPORT_INTERVAL"`
-	MemStatMetrics []string `yaml:"MEMSTAT_METRICS"`
+	MemStatMetrics []string
+	Server         string
+	Port           string
+	Address        string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
+	PollInterval   string `env:"POLL_INTERVAL" envDefault:"2s"`
+	SendInterval   string `env:"REPORT_INTERVAL" envDefault:"10s"`
 }
 
 func NewAgentConfig() *Config {
 	var c Config
 
-	var envVar struct {
-		Addr           string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
-		PollInterval   string `env:"POLL_INTERVAL" envDefault:"2s"`
-		ReportInterval string `env:"REPORT_INTERVAL" envDefault:"10s"`
-	}
-	err := env.Parse(&envVar)
+	err := env.Parse(&c)
 	if err != nil {
 		log.Fatal(nil)
 	}
-	varChain := strings.Split(envVar.Addr, ":")
+	varChain := strings.Split(c.Address, ":")
 
 	c.Server = varChain[0]
 	c.Port = varChain[1]
 
-	c.PollInterval = envVar.PollInterval
-	c.SendInterval = envVar.ReportInterval
 	c.MemStatMetrics = sliceMemStat()
 
 	return &c

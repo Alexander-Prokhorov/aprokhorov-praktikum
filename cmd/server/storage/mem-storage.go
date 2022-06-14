@@ -7,11 +7,13 @@ import (
 )
 
 type MemStorage struct {
-	Metrics struct {
-		Gauge   map[string]Gauge
-		Counter map[string]Counter
-	}
-	mutex *sync.RWMutex
+	Metrics Metrics       `json:"Metrics"`
+	mutex   *sync.RWMutex `json:"-"`
+}
+
+type Metrics struct {
+	Gauge   map[string]Gauge   `json:"Gauge"`
+	Counter map[string]Counter `json:"Counter"`
 }
 
 func NewStorageMem() *MemStorage {

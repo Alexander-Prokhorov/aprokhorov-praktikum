@@ -1,10 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"aprokhorov-praktikum/cmd/server/config"
+	"aprokhorov-praktikum/cmd/server/files"
 	"aprokhorov-praktikum/cmd/server/handlers"
 	"aprokhorov-praktikum/cmd/server/storage"
 
@@ -17,6 +23,11 @@ func main() {
 
 	// Init Storage
 	database := storage.NewStorageMem()
+	if conf.Restore {
+		if err := files.LoadData(conf.StoreFile, database); err != nil {
+			log.Fatal(err)
+		}
+	}
 
 	// Init chi Router and setup Handlers
 	r := chi.NewRouter()
@@ -33,10 +44,47 @@ func main() {
 		})
 	})
 
+	// Init system calls
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	// Init Saver
+	storeInterval, err := time.ParseDuration(conf.StoreInterval)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tickerSave := time.NewTicker(storeInterval)
+	go func() {
+		for {
+			<-tickerSave.C
+			err := files.SaveData(conf.StoreFile, database)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}()
+
+	// defer Save on Exit
+	defer func() {
+		err := files.SaveData(conf.StoreFile, database)
+		if err != nil {
+			fmt.Printf("Graceful Shutdown error: %v", err)
+		} else {
+			fmt.Println("Graceful Shutdown Success!")
+		}
+	}()
+	defer fmt.Println("\nGraceful Shutdown Started!")
+
 	// Init Server
 	server := &http.Server{
-		Addr:    conf.Address + ":" + conf.Port,
+		Addr:    conf.Server + ":" + conf.Port,
 		Handler: r,
 	}
-	log.Fatal(server.ListenAndServe())
+
+	go func() {
+		log.Fatal(server.ListenAndServe())
+	}()
+
+	// Handle os.Exit
+	<-done
 }
