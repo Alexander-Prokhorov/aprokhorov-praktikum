@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"log"
 
 	"github.com/caarlos0/env/v6"
@@ -14,12 +15,20 @@ type Config struct {
 }
 
 func NewServerConfig() *Config {
-	var c Config
+	return &Config{}
+}
 
-	err := env.Parse(&c)
+func (c *Config) EnvInit() {
+	err := env.Parse(c)
 	if err != nil {
-		log.Fatal(nil)
+		log.Fatal(err)
 	}
+}
 
-	return &c
+func (c Config) String() string {
+	cString, err := json.MarshalIndent(c, "", "    ")
+	if err != nil {
+		return ""
+	}
+	return string(cString)
 }

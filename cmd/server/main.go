@@ -25,18 +25,19 @@ func init() {
 	conf = config.NewServerConfig()
 
 	// Init flags
-	conf.Address = *flag.String("a", "127.0.0.0:8080", "An ip address for server run")
-	conf.Restore = *flag.Bool("r", true, "Restore Metrics from file?")
-	conf.StoreInterval = *flag.String("i", "300s", "Interval for storing Data to file")
-	conf.StoreFile = *flag.String("f", "/tmp/devops-metrics-db.json", "File path to store Data")
-
-	// Re-init for Env vars
-	conf = config.NewServerConfig()
+	flag.StringVar(&conf.Address, "a", "127.0.0.1:8080", "An ip address for server run")
+	flag.StringVar(&conf.StoreInterval, "i", "300s", "Interval for storing Data to file")
+	flag.StringVar(&conf.StoreFile, "f", "/tmp/devops-metrics-db.json", "File path to store Data")
+	flag.BoolVar(&conf.Restore, "r", true, "Restore Metrics from file?")
 }
 
 func main() {
 	// Init Flags
 	flag.Parse()
+
+	// Init Config from Env
+	conf.EnvInit()
+	fmt.Println(*conf)
 
 	// Init Storage
 	database := storage.NewStorageMem()
