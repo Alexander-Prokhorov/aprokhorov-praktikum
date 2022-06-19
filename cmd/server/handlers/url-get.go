@@ -11,6 +11,8 @@ import (
 
 func Get(s storage.Reader) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+
 		var req Metrics
 
 		req.MType = chi.URLParam(r, "metricType")
@@ -70,6 +72,9 @@ func GetAll(s storage.Reader) http.HandlerFunc {
 				htmlPage += decorator(metricName+" = "+MetricValue, "div")
 			}
 		}
+
+		w.Header().Set("Content-Type", "text/html")
+
 		_, err := w.Write([]byte(htmlPage))
 		if err != nil {
 			panic(err)
