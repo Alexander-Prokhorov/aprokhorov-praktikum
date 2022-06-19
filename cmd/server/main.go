@@ -50,6 +50,9 @@ func main() {
 	// Init chi Router and setup Handlers
 	r := chi.NewRouter()
 
+	r.Use(handlers.Unpack)
+	r.Use(handlers.Pack)
+
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAll(database))
 		r.Route("/value", func(r chi.Router) {
