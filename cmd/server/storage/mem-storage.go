@@ -7,17 +7,21 @@ import (
 )
 
 type MemStorage struct {
-	Metrics struct {
-		Gauge   map[string]Gauge
-		Counter map[string]Counter
-	}
-	mutex *sync.RWMutex
+	Metrics Metrics       `json:"Metrics"`
+	mutex   *sync.RWMutex `json:"-"`
 }
 
-func (ms *MemStorage) Init() {
+type Metrics struct {
+	Gauge   map[string]Gauge   `json:"Gauge"`
+	Counter map[string]Counter `json:"Counter"`
+}
+
+func NewStorageMem() *MemStorage {
+	var ms MemStorage
 	ms.Metrics.Gauge = make(map[string]Gauge)
 	ms.Metrics.Counter = make(map[string]Counter)
 	ms.mutex = &sync.RWMutex{}
+	return &ms
 }
 
 func (ms *MemStorage) Write(metricName string, value interface{}) error {

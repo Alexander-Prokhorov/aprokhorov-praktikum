@@ -1,19 +1,40 @@
 package config
 
+import (
+	"encoding/json"
+	"log"
+
+	"github.com/caarlos0/env/v6"
+)
+
 type Config struct {
-	Server         string   `yaml:"SERVER"`
-	Port           string   `yaml:"PORT"`
-	PollInterval   string   `yaml:"POOL_INTERVAL"`
-	ReportInterval string   `yaml:"REPORT_INTERVAL"`
-	MemStatMetrics []string `yaml:"MEMSTAT_METRICS"`
+	MemStatMetrics []string `json:"-"`
+	Address        string   `env:"ADDRESS"`         //envDefault:"127.0.0.1:8080"`
+	PollInterval   string   `env:"POLL_INTERVAL"`   //envDefault:"2s"`
+	SendInterval   string   `env:"REPORT_INTERVAL"` //envDefault:"10s"`
 }
 
-func (c *Config) InitDefaults() {
-	c.Server = "127.0.0.1"
-	c.Port = "8080"
-	c.PollInterval = "2s"
-	c.ReportInterval = "10s"
-	c.MemStatMetrics = []string{
+func (c *Config) EnvInit() {
+	err := env.Parse(c)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (c Config) String() string {
+	cString, err := json.MarshalIndent(c, "", "    ")
+	if err != nil {
+		return ""
+	}
+	return string(cString)
+}
+
+func NewAgentConfig() *Config {
+	return &Config{MemStatMetrics: sliceMemStat()}
+}
+
+func sliceMemStat() []string {
+	return []string{
 		"Alloc",
 		"BuckHashSys",
 		"Frees",

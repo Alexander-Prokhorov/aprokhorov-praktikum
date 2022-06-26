@@ -14,13 +14,14 @@ type Poller struct {
 	Storage storage.Storage
 }
 
-func (p *Poller) Init() {
-	p.Storage = new(storage.MemStorage)
-	p.Storage.Init()
+func NewAgentPoller() *Poller {
+	var p Poller
+	p.Storage = storage.NewStorageMem()
 	err := p.Storage.Write("PollCount", storage.Counter(0))
 	if err != nil {
 		panic("Can't init storage")
 	}
+	return &p
 }
 
 func (p *Poller) PollRandomMetric() error {

@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
-	"strconv"
 
 	"aprokhorov-praktikum/cmd/server/storage"
 
@@ -11,36 +11,51 @@ import (
 
 func Get(s storage.Reader) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		metricType := chi.URLParam(r, "metricType")
-		metricName := chi.URLParam(r, "metricName")
-		value, err := s.Read(metricType, metricName)
+		w.Header().Set("Content-Type", "text/plain")
+
+		var req Metrics
+
+		req.MType = chi.URLParam(r, "metricType")
+		req.ID = chi.URLParam(r, "metricName")
+
+		err := readHelper(w, s, &req)
 		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			_, err = w.Write([]byte("404. Not Found"))
-			if err != nil {
-				panic(err)
-			}
 			return
 		}
-		var respond string
-		switch data := value.(type) {
-		case storage.Counter:
-			respond = strconv.FormatInt(int64(data), 10)
-		case storage.Gauge:
-			respond = strconv.FormatFloat(float64(data), 'f', -1, 64)
-		default:
-			w.WriteHeader(http.StatusInternalServerError)
-			_, err := w.Write([]byte("500. Internal Server Error"))
-			if err != nil {
-				panic(err)
-			}
-			return
+
+		var respond interface{}
+		switch req.MType {
+		case "counter":
+			respond = *req.Delta
+		case "gauge":
+			respond = *req.Value
 		}
-		_, err = w.Write([]byte(respond))
+
+		_, err = w.Write([]byte(fmt.Sprintf("%v", respond)))
 		if err != nil {
 			panic(err)
 		}
 	}
+}
+
+func readHelper(w http.ResponseWriter, s storage.Reader, m *Metrics) error {
+	value, err := s.Read(m.MType, m.ID)
+	if err != nil {
+		http.Error(w, "404. Not Found", http.StatusNotFound)
+		return err
+	}
+	switch data := value.(type) {
+	case storage.Counter:
+		respond := int64(data)
+		m.Delta = &respond
+	case storage.Gauge:
+		respond := float64(data)
+		m.Value = &respond
+	default:
+		http.Error(w, "500. Internal Server Error", http.StatusInternalServerError)
+		return err
+	}
+	return nil
 }
 
 func GetAll(s storage.Reader) http.HandlerFunc {
@@ -57,6 +72,9 @@ func GetAll(s storage.Reader) http.HandlerFunc {
 				htmlPage += decorator(metricName+" = "+MetricValue, "div")
 			}
 		}
+
+		w.Header().Set("Content-Type", "text/html")
+
 		_, err := w.Write([]byte(htmlPage))
 		if err != nil {
 			panic(err)

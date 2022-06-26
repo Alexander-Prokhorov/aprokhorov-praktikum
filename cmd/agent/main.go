@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"time"
@@ -16,35 +17,49 @@ func errHandle(text string, err error) {
 	}
 }
 
-func main() {
+var conf *config.Config
+
+func init() {
 	// Init Config
-	conf := config.Config{}
-	conf.InitDefaults()
+	conf = config.NewAgentConfig()
+
+	// Init flags
+	flag.StringVar(&conf.Address, "a", "127.0.0.1:8080", "An ip address for server run")
+	flag.StringVar(&conf.SendInterval, "r", "10s", "Report Interval")
+	flag.StringVar(&conf.PollInterval, "p", "2s", "Poll Interval")
+}
+
+func main() {
+	//Init Flags
+	flag.Parse()
+
+	// Init Config from Env
+	conf.EnvInit()
+	fmt.Println(*conf)
 
 	// Init Sender
-	send := sender.Sender{Server: conf.Server, Port: conf.Port}
-	send.Init()
+	send := sender.NewAgentSender(conf.Address)
 
 	// Init Poller
-	NewMetrics := new(poller.Poller)
-	NewMetrics.Init()
+	NewMetrics := poller.NewAgentPoller()
 
 	// Poll and Send
 	pollInterval, err := time.ParseDuration(conf.PollInterval)
 	errHandle("Config parse error: %s", err)
 
-	sendInterval, err := time.ParseDuration(conf.ReportInterval)
+	sendInterval, err := time.ParseDuration(conf.SendInterval)
 	errHandle("Config parse error: %s", err)
 
 	tickerPoll := time.NewTicker(pollInterval)
 	tickerSend := time.NewTicker(sendInterval)
+
 	for {
 		select {
 		case <-tickerPoll.C:
-			err = NewMetrics.PollMemStats(conf.MemStatMetrics)
+			err := NewMetrics.PollMemStats(conf.MemStatMetrics)
 			errHandle("Poller error: %s", err)
 
-			err := NewMetrics.PollRandomMetric()
+			err = NewMetrics.PollRandomMetric()
 			errHandle("Poller error: %s", err)
 
 			counter, err := NewMetrics.Storage.Read("counter", "PollCount")
