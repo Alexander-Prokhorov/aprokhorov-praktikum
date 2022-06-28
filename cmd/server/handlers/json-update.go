@@ -8,7 +8,7 @@ import (
 	"aprokhorov-praktikum/cmd/server/storage"
 )
 
-func JSONUpdate(s storage.Storage) http.HandlerFunc {
+func JSONUpdate(s storage.Storage, key string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Header.Get("Content-Type") != "application/json" {
@@ -25,7 +25,7 @@ func JSONUpdate(s storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		err := updateHelper(w, s, &jReq)
+		err := updateHelper(w, s, &jReq, key)
 		if err != nil {
 			return
 		}

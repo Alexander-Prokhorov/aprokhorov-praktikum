@@ -3,10 +3,13 @@ package sender
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
+
+	"aprokhorov-praktikum/internal/hasher"
 )
 
 type Sender struct {
@@ -32,11 +35,11 @@ func NewAgentSender(address string) *Sender {
 	return &s
 }
 
-func (s *Sender) SendMetric(mtype string, name string, value string) error {
-	return s.SendMetricJSON(mtype, name, value)
+func (s *Sender) SendMetric(mtype string, name string, value string, key string) error {
+	return s.SendMetricJSON(mtype, name, value, key)
 }
 
-func (s *Sender) SendMetricURL(mtype string, name string, value string) error {
+func (s *Sender) SendMetricURL(mtype string, name string, value string, key string) error {
 	s.URL.Path = "update/" + mtype + "/" + name + "/" + value
 	request, err := http.NewRequest(http.MethodPost, s.URL.String(), nil)
 	if err != nil {
@@ -51,7 +54,7 @@ func (s *Sender) SendMetricURL(mtype string, name string, value string) error {
 	return nil
 }
 
-func (s *Sender) SendMetricJSON(mtype string, name string, value string) error {
+func (s *Sender) SendMetricJSON(mtype string, name string, value string, key string) error {
 	s.URL.Path = "update/"
 
 	var req Metrics
@@ -65,12 +68,18 @@ func (s *Sender) SendMetricJSON(mtype string, name string, value string) error {
 			return err
 		}
 		req.Delta = &rValue
+		if key != "" {
+			req.Hash = hasher.HashHMAC(fmt.Sprintf("%s:counter:%d", name, rValue), key)
+		}
 	case "gauge":
 		rValue, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return err
 		}
 		req.Value = &rValue
+		if key != "" {
+			req.Hash = hasher.HashHMAC(fmt.Sprintf("%s:gauge:%f", name, rValue), key)
+		}
 	}
 
 	jReq, err := json.Marshal(req)

@@ -17,20 +17,16 @@ func errHandle(text string, err error) {
 	}
 }
 
-var conf *config.Config
-
-func init() {
+func main() {
 	// Init Config
-	conf = config.NewAgentConfig()
+	conf := config.NewAgentConfig()
 
 	// Init flags
 	flag.StringVar(&conf.Address, "a", "127.0.0.1:8080", "An ip address for server run")
 	flag.StringVar(&conf.SendInterval, "r", "10s", "Report Interval")
 	flag.StringVar(&conf.PollInterval, "p", "2s", "Poll Interval")
-}
+	flag.StringVar(&conf.Key, "k", "", "Key for Hash")
 
-func main() {
-	//Init Flags
 	flag.Parse()
 
 	// Init Config from Env
@@ -73,7 +69,7 @@ func main() {
 			for metricType, values := range NewMetrics.Storage.ReadAll() {
 				for metricName, metricValue := range values {
 					go func(mtype string, name string, value string) {
-						err := send.SendMetric(mtype, name, value)
+						err := send.SendMetric(mtype, name, value, conf.Key)
 						errHandle("Sender error: %s", err)
 					}(metricType, metricName, metricValue)
 				}

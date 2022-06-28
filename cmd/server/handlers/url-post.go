@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"crypto/hmac"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"aprokhorov-praktikum/cmd/server/storage"
+	"aprokhorov-praktikum/internal/hasher"
 
 	"github.com/go-chi/chi"
 )
@@ -36,7 +38,7 @@ func Post(s storage.Storage) http.HandlerFunc {
 			req.Value = &newValue
 		}
 
-		err := updateHelper(w, s, &req)
+		err := updateHelper(w, s, &req, "")
 		if err != nil {
 			return
 		}
@@ -45,9 +47,18 @@ func Post(s storage.Storage) http.HandlerFunc {
 	}
 }
 
-func updateHelper(w http.ResponseWriter, s storage.Storage, m *Metrics) error {
+func updateHelper(w http.ResponseWriter, s storage.Storage, m *Metrics, key string) error {
 	switch m.MType {
 	case "counter":
+		// Проверим валидность хеша
+		if m.Hash != "" && key != "" {
+			hash := hasher.HashHMAC(fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta), key)
+			if !hmac.Equal([]byte(hash), []byte(m.Hash)) {
+				http.Error(w, "Invalid Hash", http.StatusBadRequest)
+				return errors.New("Invalid Hash")
+			}
+		}
+
 		// Читаем метрику из базы
 		value, err := s.Read(m.MType, m.ID)
 		if err != nil {

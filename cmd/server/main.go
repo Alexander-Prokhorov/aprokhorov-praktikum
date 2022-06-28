@@ -24,6 +24,7 @@ func main() {
 	flag.StringVar(&conf.Address, "a", "127.0.0.1:8080", "An ip address for server run")
 	flag.StringVar(&conf.StoreInterval, "i", "300s", "Interval for storing Data to file")
 	flag.StringVar(&conf.StoreFile, "f", "/tmp/devops-metrics-db.json", "File path to store Data")
+	flag.StringVar(&conf.Key, "k", "", "Hash Key")
 	flag.BoolVar(&conf.Restore, "r", true, "Restore Metrics from file?")
 	flag.Parse()
 
@@ -48,11 +49,11 @@ func main() {
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAll(database))
 		r.Route("/value", func(r chi.Router) {
-			r.Post("/", handlers.JSONRead(database))
+			r.Post("/", handlers.JSONRead(database, conf.Key))
 			r.Get("/{metricType}/{metricName}", handlers.Get(database))
 		})
 		r.Route("/update", func(r chi.Router) {
-			r.Post("/", handlers.JSONUpdate(database))
+			r.Post("/", handlers.JSONUpdate(database, conf.Key))
 			r.Post("/{metricType}/{metricName}/{metricValue}", handlers.Post(database))
 		})
 	})

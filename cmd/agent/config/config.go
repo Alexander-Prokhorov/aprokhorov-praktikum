@@ -12,6 +12,7 @@ type Config struct {
 	Address        string   `env:"ADDRESS"`         //envDefault:"127.0.0.1:8080"`
 	PollInterval   string   `env:"POLL_INTERVAL"`   //envDefault:"2s"`
 	SendInterval   string   `env:"REPORT_INTERVAL"` //envDefault:"10s"`
+	Key            string   `env:"KEY"`             //envDefault:""`
 }
 
 func (c *Config) EnvInit() {

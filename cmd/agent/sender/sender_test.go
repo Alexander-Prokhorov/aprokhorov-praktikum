@@ -21,6 +21,7 @@ func TestSender_SendMetricURL(t *testing.T) {
 		name  string
 		mtype string
 		value string
+		key   string
 	}
 	type want struct {
 		path string
@@ -36,7 +37,7 @@ func TestSender_SendMetricURL(t *testing.T) {
 		{
 			name:    "First Test Sender",
 			fields:  fields{Address: "127.0.0.1:8080"},
-			args:    args{name: "TestMetric", mtype: "counter", value: "1"},
+			args:    args{name: "TestMetric", mtype: "counter", value: "1", key: ""},
 			wantErr: false,
 			want:    want{path: "update/counter/TestMetric/1"},
 		},
@@ -59,7 +60,7 @@ func TestSender_SendMetricURL(t *testing.T) {
 			// Init Sender Client
 			s := NewAgentSender(params[2])
 
-			if err := s.SendMetricURL(tt.args.mtype, tt.args.name, tt.args.value); (err != nil) != tt.wantErr {
+			if err := s.SendMetricURL(tt.args.mtype, tt.args.name, tt.args.value, tt.args.key); (err != nil) != tt.wantErr {
 				t.Errorf("Sender.SendMetric() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			assert.Equal(t, s.URL.Path, tt.want.path)
@@ -77,6 +78,7 @@ func TestSender_SendMetricJSON(t *testing.T) {
 		name  string
 		mtype string
 		value string
+		key   string
 	}
 	type want struct {
 		path string
@@ -92,7 +94,7 @@ func TestSender_SendMetricJSON(t *testing.T) {
 		{
 			name:    "JSON Test Sender",
 			fields:  fields{Address: "127.0.0.0:8080"},
-			args:    args{name: "TestMetric", mtype: "counter", value: "1"},
+			args:    args{name: "TestMetric", mtype: "counter", value: "1", key: ""},
 			wantErr: false,
 			want:    want{path: "update"},
 		},
@@ -115,7 +117,7 @@ func TestSender_SendMetricJSON(t *testing.T) {
 			// Init Sender Client
 			s := NewAgentSender(params[2])
 
-			if err := s.SendMetricJSON(tt.args.mtype, tt.args.name, tt.args.value); (err != nil) != tt.wantErr {
+			if err := s.SendMetricJSON(tt.args.mtype, tt.args.name, tt.args.value, tt.args.key); (err != nil) != tt.wantErr {
 				t.Errorf("Sender.SendMetric() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

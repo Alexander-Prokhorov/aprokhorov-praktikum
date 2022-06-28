@@ -12,6 +12,7 @@ type Config struct {
 	StoreInterval string `env:"STORE_INTERVAL"` // envDefault:"3s"`
 	StoreFile     string `env:"STORE_FILE"`     // envDefault:"/tmp/devops-metrics-db.json"`
 	Restore       bool   `env:"RESTORE"`        // envDefault:"true"`
+	Key           string `env:"KEY"`            // envDefault:""`
 }
 
 func NewServerConfig() *Config {

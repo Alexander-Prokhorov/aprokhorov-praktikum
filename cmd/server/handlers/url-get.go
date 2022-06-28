@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"aprokhorov-praktikum/cmd/server/storage"
+	"aprokhorov-praktikum/internal/hasher"
 
 	"github.com/go-chi/chi"
 )
@@ -18,7 +19,7 @@ func Get(s storage.Reader) http.HandlerFunc {
 		req.MType = chi.URLParam(r, "metricType")
 		req.ID = chi.URLParam(r, "metricName")
 
-		err := readHelper(w, s, &req)
+		err := readHelper(w, s, &req, "")
 		if err != nil {
 			return
 		}
@@ -38,7 +39,9 @@ func Get(s storage.Reader) http.HandlerFunc {
 	}
 }
 
-func readHelper(w http.ResponseWriter, s storage.Reader, m *Metrics) error {
+func readHelper(w http.ResponseWriter, s storage.Reader, m *Metrics, key string) error {
+	var hashString string
+
 	value, err := s.Read(m.MType, m.ID)
 	if err != nil {
 		http.Error(w, "404. Not Found", http.StatusNotFound)
@@ -48,13 +51,20 @@ func readHelper(w http.ResponseWriter, s storage.Reader, m *Metrics) error {
 	case storage.Counter:
 		respond := int64(data)
 		m.Delta = &respond
+		hashString = fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta)
 	case storage.Gauge:
 		respond := float64(data)
 		m.Value = &respond
+		hashString = fmt.Sprintf("%s:gauge:%f", m.ID, *m.Value)
 	default:
 		http.Error(w, "500. Internal Server Error", http.StatusInternalServerError)
 		return err
 	}
+
+	if key != "" {
+		m.Hash = hasher.HashHMAC(hashString, key)
+	}
+
 	return nil
 }
 
