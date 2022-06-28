@@ -54,8 +54,8 @@ func updateHelper(w http.ResponseWriter, s storage.Storage, m *Metrics, key stri
 		if m.Hash != "" && key != "" {
 			hash := hasher.HashHMAC(fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta), key)
 			if !hmac.Equal([]byte(hash), []byte(m.Hash)) {
-				http.Error(w, "Invalid Hash", http.StatusBadRequest)
-				return errors.New("Invalid Hash")
+				http.Error(w, "invalid hash", http.StatusBadRequest)
+				return errors.New("invalid hash")
 			}
 		}
 
