@@ -23,6 +23,7 @@ func main() {
 	// Init Flags
 	flag.StringVar(&conf.Address, "a", "127.0.0.1:8080", "An ip address for server run")
 	flag.StringVar(&conf.StoreInterval, "i", "300s", "Interval for storing Data to file")
+	flag.StringVar(&conf.DatabaseDSN, "d", "", "Path to PostgresSQL (in prefer to File storing)")
 	flag.StringVar(&conf.StoreFile, "f", "/tmp/devops-metrics-db.json", "File path to store Data")
 	flag.StringVar(&conf.Key, "k", "", "Hash Key")
 	flag.BoolVar(&conf.Restore, "r", true, "Restore Metrics from file?")
@@ -33,9 +34,18 @@ func main() {
 	fmt.Println(*conf)
 
 	// Init Storage
-	database := storage.NewStorageMem()
-	if conf.Restore {
-		if err := files.LoadData(conf.StoreFile, database); err != nil {
+	var database storage.Storage
+	if conf.DatabaseDSN == "" {
+		database = storage.NewStorageMem()
+		if conf.Restore {
+			if err := files.LoadData(conf.StoreFile, database); err != nil {
+				log.Fatal(err)
+			}
+		}
+	} else {
+		var err error
+		database, err = storage.NewDatabaseConnect(conf.DatabaseDSN)
+		if err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -55,6 +65,9 @@ func main() {
 		r.Route("/update", func(r chi.Router) {
 			r.Post("/", handlers.JSONUpdate(database, conf.Key))
 			r.Post("/{metricType}/{metricName}/{metricValue}", handlers.Post(database))
+		})
+		r.Route("/ping", func(r chi.Router) {
+			r.Get("/", handlers.Ping(database))
 		})
 	})
 

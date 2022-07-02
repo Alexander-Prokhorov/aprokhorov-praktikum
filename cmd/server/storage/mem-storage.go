@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 	"strconv"
 	"sync"
@@ -97,4 +98,8 @@ func (ms *MemStorage) safeGaugeRead(metricName string) (Gauge, error) {
 		return Gauge(0), errors.New("value not found")
 	}
 	return value, nil
+}
+
+func (ms *MemStorage) Ping(ctx context.Context) error {
+	return nil
 }

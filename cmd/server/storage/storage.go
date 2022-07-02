@@ -1,11 +1,14 @@
 package storage
 
+import "context"
+
 type Gauge float64
 type Counter int64
 
 type Storage interface {
 	Reader
 	Writer
+	Pinger
 }
 
 type Reader interface {
@@ -15,4 +18,8 @@ type Reader interface {
 
 type Writer interface {
 	Write(metric string, value interface{}) error
+}
+
+type Pinger interface {
+	Ping(context.Context) error
 }
