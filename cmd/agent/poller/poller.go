@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"time"
 
-	"aprokhorov-praktikum/cmd/server/storage"
+	"aprokhorov-praktikum/internal/storage"
 )
 
 type Poller struct {

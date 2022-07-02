@@ -66,7 +66,11 @@ func main() {
 		case <-tickerSend.C:
 			fmt.Println("Send Data to Server")
 
-			for metricType, values := range NewMetrics.Storage.ReadAll() {
+			metrics, err := NewMetrics.Storage.ReadAll()
+			if err != nil {
+				log.Fatal(err)
+			}
+			for metricType, values := range metrics {
 				for metricName, metricValue := range values {
 					go func(mtype string, name string, value string) {
 						err := send.SendMetric(mtype, name, value, conf.Key)

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"aprokhorov-praktikum/cmd/server/storage"
 	"aprokhorov-praktikum/internal/hasher"
+	"aprokhorov-praktikum/internal/storage"
 
 	"github.com/go-chi/chi"
 )
@@ -40,6 +40,7 @@ func Post(s storage.Storage) http.HandlerFunc {
 
 		err := updateHelper(w, s, &req, "")
 		if err != nil {
+			http.Error(w, fmt.Sprintf("500. Internal Server Error: %s", err), http.StatusBadRequest)
 			return
 		}
 		w.Header().Set("Content-Type", "plain/text")

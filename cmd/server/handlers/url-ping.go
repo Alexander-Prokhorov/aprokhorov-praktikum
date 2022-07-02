@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"aprokhorov-praktikum/cmd/server/storage"
+	"aprokhorov-praktikum/internal/storage"
 )
 
 func Ping(s storage.Pinger) http.HandlerFunc {

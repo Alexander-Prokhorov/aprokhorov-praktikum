@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"aprokhorov-praktikum/cmd/server/storage"
+	"aprokhorov-praktikum/internal/storage"
 )
 
 func SaveData(fileName string, s storage.Storage) error {

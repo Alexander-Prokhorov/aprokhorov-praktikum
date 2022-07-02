@@ -9,11 +9,12 @@ type Storage interface {
 	Reader
 	Writer
 	Pinger
+	Closer
 }
 
 type Reader interface {
 	Read(valueType string, metric string) (interface{}, error)
-	ReadAll() map[string]map[string]string
+	ReadAll() (map[string]map[string]string, error)
 }
 
 type Writer interface {
@@ -22,4 +23,7 @@ type Writer interface {
 
 type Pinger interface {
 	Ping(context.Context) error
+}
+type Closer interface {
+	Close()
 }

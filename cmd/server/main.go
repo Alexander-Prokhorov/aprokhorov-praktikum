@@ -13,7 +13,7 @@ import (
 	"aprokhorov-praktikum/cmd/server/config"
 	"aprokhorov-praktikum/cmd/server/files"
 	"aprokhorov-praktikum/cmd/server/handlers"
-	"aprokhorov-praktikum/cmd/server/storage"
+	"aprokhorov-praktikum/internal/storage"
 
 	"github.com/go-chi/chi"
 )
@@ -49,6 +49,7 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+	defer database.Close()
 
 	// Init chi Router and setup Handlers
 	r := chi.NewRouter()
@@ -58,6 +59,9 @@ func main() {
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAll(database))
+		r.Route("/ping", func(r chi.Router) {
+			r.Get("/", handlers.Ping(database))
+		})
 		r.Route("/value", func(r chi.Router) {
 			r.Post("/", handlers.JSONRead(database, conf.Key))
 			r.Get("/{metricType}/{metricName}", handlers.Get(database))
@@ -66,42 +70,40 @@ func main() {
 			r.Post("/", handlers.JSONUpdate(database, conf.Key))
 			r.Post("/{metricType}/{metricName}/{metricValue}", handlers.Post(database))
 		})
-		r.Route("/ping", func(r chi.Router) {
-			r.Get("/", handlers.Ping(database))
-		})
 	})
 
 	// Init system calls
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	// Init Saver
-	storeInterval, err := time.ParseDuration(conf.StoreInterval)
-	if err != nil {
-		log.Fatal(err)
-	}
-	tickerSave := time.NewTicker(storeInterval)
-	go func() {
-		for {
-			<-tickerSave.C
+	if conf.DatabaseDSN == "" {
+		// Init Saver
+		storeInterval, err := time.ParseDuration(conf.StoreInterval)
+		if err != nil {
+			log.Fatal(err)
+		}
+		tickerSave := time.NewTicker(storeInterval)
+		go func() {
+			for {
+				<-tickerSave.C
+				err := files.SaveData(conf.StoreFile, database)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+		}()
+
+		// defer Save on Exit
+		defer func() {
 			err := files.SaveData(conf.StoreFile, database)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Printf("Graceful Shutdown error: %v", err)
+			} else {
+				fmt.Println("Graceful Shutdown Success!")
 			}
-		}
-	}()
-
-	// defer Save on Exit
-	defer func() {
-		err := files.SaveData(conf.StoreFile, database)
-		if err != nil {
-			fmt.Printf("Graceful Shutdown error: %v", err)
-		} else {
-			fmt.Println("Graceful Shutdown Success!")
-		}
-	}()
-	defer fmt.Println("\nGraceful Shutdown Started!")
-
+		}()
+		defer fmt.Println("\nGraceful Shutdown Started!")
+	}
 	// Init Server
 	server := &http.Server{
 		Addr:    conf.Address,
@@ -114,4 +116,5 @@ func main() {
 
 	// Handle os.Exit
 	<-done
+
 }

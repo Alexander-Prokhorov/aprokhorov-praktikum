@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"aprokhorov-praktikum/cmd/agent/config"
-	"aprokhorov-praktikum/cmd/server/storage"
+	"aprokhorov-praktikum/internal/storage"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -47,7 +47,9 @@ func TestMetrics_PollMemStats(t *testing.T) {
 
 			lenWant := len(tt.args.config.MemStatMetrics)
 
-			gaugeValues := tt.fields.poller.Storage.ReadAll()["gauge"]
+			data, err := tt.fields.poller.Storage.ReadAll()
+			assert.NoError(t, err)
+			gaugeValues := data["gauge"]
 			fmt.Print(gaugeValues)
 			lenGot := len(gaugeValues)
 			assert.Equal(t, lenWant, lenGot)

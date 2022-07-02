@@ -25,7 +25,7 @@ func NewStorageMem() *MemStorage {
 	return &ms
 }
 
-func (ms *MemStorage) Write(metricName string, value interface{}) error {
+func (ms MemStorage) Write(metricName string, value interface{}) error {
 
 	switch data := value.(type) {
 	case Counter:
@@ -39,7 +39,7 @@ func (ms *MemStorage) Write(metricName string, value interface{}) error {
 	return nil
 }
 
-func (ms *MemStorage) Read(valueType string, metricName string) (interface{}, error) {
+func (ms MemStorage) Read(valueType string, metricName string) (interface{}, error) {
 	switch valueType {
 	case "counter":
 		return ms.safeCounterRead(metricName)
@@ -50,7 +50,7 @@ func (ms *MemStorage) Read(valueType string, metricName string) (interface{}, er
 	}
 }
 
-func (ms *MemStorage) ReadAll() map[string]map[string]string {
+func (ms MemStorage) ReadAll() (map[string]map[string]string, error) {
 	ret := make(map[string]map[string]string)
 	ret["counter"] = make(map[string]string)
 	ret["gauge"] = make(map[string]string)
@@ -65,7 +65,7 @@ func (ms *MemStorage) ReadAll() map[string]map[string]string {
 	for metricName, metricValue := range ms.Metrics.Gauge {
 		ret["gauge"][metricName] = strconv.FormatFloat(float64(metricValue), 'f', -1, 64)
 	}
-	return ret
+	return ret, nil
 }
 
 func (ms *MemStorage) safeCounterWrite(metricName string, value Counter) {
@@ -100,6 +100,9 @@ func (ms *MemStorage) safeGaugeRead(metricName string) (Gauge, error) {
 	return value, nil
 }
 
-func (ms *MemStorage) Ping(ctx context.Context) error {
+func (ms MemStorage) Ping(ctx context.Context) error {
 	return nil
+}
+
+func (ms MemStorage) Close() {
 }

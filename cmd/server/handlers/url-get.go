@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"aprokhorov-praktikum/cmd/server/storage"
 	"aprokhorov-praktikum/internal/hasher"
+	"aprokhorov-praktikum/internal/storage"
 
 	"github.com/go-chi/chi"
 )
@@ -44,7 +44,7 @@ func readHelper(w http.ResponseWriter, s storage.Reader, m *Metrics, key string)
 
 	value, err := s.Read(m.MType, m.ID)
 	if err != nil {
-		http.Error(w, "404. Not Found", http.StatusNotFound)
+		http.Error(w, fmt.Sprintf("404. Not Found. %s", err), http.StatusNotFound)
 		return err
 	}
 	switch data := value.(type) {
@@ -57,7 +57,7 @@ func readHelper(w http.ResponseWriter, s storage.Reader, m *Metrics, key string)
 		m.Value = &respond
 		hashString = fmt.Sprintf("%s:gauge:%f", m.ID, *m.Value)
 	default:
-		http.Error(w, "500. Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("500. Internal Server. %s", err), http.StatusInternalServerError)
 		return err
 	}
 
@@ -76,7 +76,12 @@ func GetAll(s storage.Reader) http.HandlerFunc {
 
 		var htmlPage string
 		htmlPage += decorator("All Metrics", "h1")
-		for metricType, metrics := range s.ReadAll() {
+		metrics, err := s.ReadAll()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("internal server error: %s", err), http.StatusInternalServerError)
+			return
+		}
+		for metricType, metrics := range metrics {
 			htmlPage += decorator(metricType, "h2")
 			for metricName, MetricValue := range metrics {
 				htmlPage += decorator(metricName+" = "+MetricValue, "div")
@@ -85,7 +90,7 @@ func GetAll(s storage.Reader) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "text/html")
 
-		_, err := w.Write([]byte(htmlPage))
+		_, err = w.Write([]byte(htmlPage))
 		if err != nil {
 			panic(err)
 		}
