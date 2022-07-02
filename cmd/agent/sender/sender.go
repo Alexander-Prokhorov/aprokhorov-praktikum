@@ -36,7 +36,7 @@ func NewAgentSender(address string) *Sender {
 }
 
 func (s *Sender) SendMetric(mtype string, name string, value string, key string) error {
-	return s.SendMetric(mtype, name, value, key)
+	return s.SendMetricJSON(mtype, name, value, key)
 }
 
 func (s *Sender) SendMetricURL(mtype string, name string, value string, key string) error {
