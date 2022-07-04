@@ -59,17 +59,19 @@ func main() {
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAll(database))
-		r.Route("/ping", func(r chi.Router) {
-			r.Get("/", handlers.Ping(database))
-		})
+		r.Get("/ping", handlers.Ping(database))
+
 		r.Route("/value", func(r chi.Router) {
 			r.Post("/", handlers.JSONRead(database, conf.Key))
 			r.Get("/{metricType}/{metricName}", handlers.Get(database))
 		})
+
 		r.Route("/update", func(r chi.Router) {
 			r.Post("/", handlers.JSONUpdate(database, conf.Key))
 			r.Post("/{metricType}/{metricName}/{metricValue}", handlers.Post(database))
 		})
+
+		r.Post("/updates/", handlers.JSONUpdates(database, conf.Key))
 	})
 
 	// Init system calls

@@ -12,8 +12,11 @@ import (
 )
 
 type Pgs struct {
-	DB    *sql.DB
-	mutex *sync.RWMutex
+	DB         *sql.DB
+	mutex      *sync.RWMutex
+	buffer     Metrics
+	bufferSize int
+	ctx        context.Context
 }
 
 func NewDatabaseConnect(dbPath string) (Pgs, error) {
@@ -29,9 +32,15 @@ func NewDatabaseConnect(dbPath string) (Pgs, error) {
 	pgs := Pgs{
 		DB:    db,
 		mutex: &sync.RWMutex{},
+		buffer: Metrics{
+			Counter: make(map[string]Counter),
+			Gauge:   make(map[string]Gauge),
+		},
+		bufferSize: 10,
+		ctx:        context.Background(),
 	}
 
-	err = pgs.InitDB(context.Background())
+	err = pgs.InitDB(pgs.ctx)
 	if err != nil {
 		return Pgs{}, err
 	}
@@ -120,39 +129,24 @@ func (pgs Pgs) ReadAll() (map[string]map[string]string, error) {
 func (pgs Pgs) Write(metricName string, value interface{}) error {
 	switch data := value.(type) {
 	case Counter:
-		err := pgs.safeCounterWrite(metricName, data)
-		if err != nil {
-			return err
-		}
+		pgs.buffer.Counter[metricName] = data
 	case Gauge:
-		err := pgs.safeGaugerWrite(metricName, data)
-		if err != nil {
-			return err
-		}
+		pgs.buffer.Gauge[metricName] = data
 	default:
 		err := errors.New("PGS: Post(): Only [gauge, counter] type are supported")
 		return err
 	}
-	return nil
-}
 
-func (pgs *Pgs) safeCounterWrite(metricName string, value Counter) error {
-	pgs.mutex.Lock()
-	_, err := pgs.DB.Exec("INSERT INTO Counter (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value", metricName, value)
-	if err != nil {
+	if len(pgs.buffer.Counter)+len(pgs.buffer.Gauge) == pgs.bufferSize {
+		if err := pgs.Flush(); err != nil {
+			return err
+		}
+	}
+
+	if err := pgs.Flush(); err != nil {
 		return err
 	}
-	pgs.mutex.Unlock()
-	return nil
-}
 
-func (pgs *Pgs) safeGaugerWrite(metricName string, value Gauge) error {
-	pgs.mutex.Lock()
-	_, err := pgs.DB.Exec("INSERT INTO Gauge (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value", metricName, value)
-	if err != nil {
-		return err
-	}
-	pgs.mutex.Unlock()
 	return nil
 }
 
@@ -194,4 +188,58 @@ func (pgs *Pgs) safeGaugeRead(metricName string) (Gauge, error) {
 
 func (pgs Pgs) Close() {
 	pgs.DB.Close()
+}
+
+func (pgs Pgs) Flush() error {
+	pgs.mutex.Lock()
+	defer pgs.mutex.Unlock()
+
+	tx, err := pgs.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	Stmt, err := pgs.DB.PrepareContext(pgs.ctx, "INSERT INTO Counter (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value")
+	if err != nil {
+		return err
+	}
+
+	txStmt := tx.StmtContext(pgs.ctx, Stmt)
+
+	for metricName, metricValue := range pgs.buffer.Counter {
+		_, err := txStmt.ExecContext(pgs.ctx,
+			metricName,
+			metricValue,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	Stmt, err = pgs.DB.PrepareContext(pgs.ctx, "INSERT INTO Gauge (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value")
+	if err != nil {
+		return err
+	}
+
+	txStmt = tx.StmtContext(pgs.ctx, Stmt)
+
+	for metricName, metricValue := range pgs.buffer.Gauge {
+		_, err := txStmt.ExecContext(pgs.ctx,
+			metricName,
+			metricValue,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		err1 := tx.Rollback()
+		if err1 != nil {
+			return err1
+		}
+		return err
+	}
+	return err
 }

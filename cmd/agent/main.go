@@ -70,15 +70,25 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			for metricType, values := range metrics {
-				for metricName, metricValue := range values {
-					go func(mtype string, name string, value string) {
-						err := send.SendMetric(mtype, name, value, conf.Key)
-						errHandle("Sender error: %s", err)
-					}(metricType, metricName, metricValue)
-				}
 
+			// Обновляем либо батчем, либо по одному
+			switch conf.Batch {
+			case true:
+				err = send.SendMetricBatch(metrics, conf.Key)
+				if err != nil {
+					log.Fatal(err)
+				}
+			default:
+				for metricType, values := range metrics {
+					for metricName, metricValue := range values {
+						go func(mtype string, name string, value string) {
+							err := send.SendMetric(mtype, name, value, conf.Key)
+							errHandle("Sender error: %s", err)
+						}(metricType, metricName, metricValue)
+					}
+				}
 			}
+
 		}
 	}
 }

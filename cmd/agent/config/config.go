@@ -13,6 +13,7 @@ type Config struct {
 	PollInterval   string   `env:"POLL_INTERVAL"`   //envDefault:"2s"`
 	SendInterval   string   `env:"REPORT_INTERVAL"` //envDefault:"10s"`
 	Key            string   `env:"KEY"`             //envDefault:""`
+	Batch          bool     `json:"-" env:"-"`
 }
 
 func (c *Config) EnvInit() {
@@ -31,7 +32,10 @@ func (c Config) String() string {
 }
 
 func NewAgentConfig() *Config {
-	return &Config{MemStatMetrics: sliceMemStat()}
+	return &Config{
+		MemStatMetrics: sliceMemStat(),
+		Batch:          true,
+	}
 }
 
 func sliceMemStat() []string {

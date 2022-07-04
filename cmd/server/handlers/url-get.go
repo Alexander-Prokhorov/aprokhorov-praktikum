@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"aprokhorov-praktikum/internal/hasher"
 	"aprokhorov-praktikum/internal/storage"
 
 	"github.com/go-chi/chi"
@@ -37,35 +36,6 @@ func Get(s storage.Reader) http.HandlerFunc {
 			panic(err)
 		}
 	}
-}
-
-func readHelper(w http.ResponseWriter, s storage.Reader, m *Metrics, key string) error {
-	var hashString string
-
-	value, err := s.Read(m.MType, m.ID)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("404. Not Found. %s", err), http.StatusNotFound)
-		return err
-	}
-	switch data := value.(type) {
-	case storage.Counter:
-		respond := int64(data)
-		m.Delta = &respond
-		hashString = fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta)
-	case storage.Gauge:
-		respond := float64(data)
-		m.Value = &respond
-		hashString = fmt.Sprintf("%s:gauge:%f", m.ID, *m.Value)
-	default:
-		http.Error(w, fmt.Sprintf("500. Internal Server. %s", err), http.StatusInternalServerError)
-		return err
-	}
-
-	if key != "" {
-		m.Hash = hasher.HashHMAC(hashString, key)
-	}
-
-	return nil
 }
 
 func GetAll(s storage.Reader) http.HandlerFunc {
