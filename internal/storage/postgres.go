@@ -98,6 +98,10 @@ func (pgs Pgs) ReadAll() (map[string]map[string]string, error) {
 	if err != nil {
 		return ret, err
 	}
+	if rows.Err() != nil {
+		return ret, rows.Err()
+	}
+	defer rows.Close()
 
 	for rows.Next() {
 		err = rows.Scan(&name, &delta)
@@ -112,8 +116,12 @@ func (pgs Pgs) ReadAll() (map[string]map[string]string, error) {
 	rows, err = pgs.DB.Query("SELECT * from Gauge")
 	pgs.mutex.RUnlock()
 	if err != nil {
-		return ret, nil
+		return ret, err
 	}
+	if rows.Err() != nil {
+		return ret, rows.Err()
+	}
+	defer rows.Close()
 
 	for rows.Next() {
 		err = rows.Scan(&name, &value)
