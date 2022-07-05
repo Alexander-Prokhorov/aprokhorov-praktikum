@@ -13,6 +13,7 @@ import (
 	"aprokhorov-praktikum/cmd/server/config"
 	"aprokhorov-praktikum/cmd/server/files"
 	"aprokhorov-praktikum/cmd/server/handlers"
+	"aprokhorov-praktikum/internal/logger"
 	"aprokhorov-praktikum/internal/storage"
 
 	"github.com/go-chi/chi"
@@ -27,11 +28,19 @@ func main() {
 	flag.StringVar(&conf.StoreFile, "f", "/tmp/devops-metrics-db.json", "File path to store Data")
 	flag.StringVar(&conf.Key, "k", "", "Hash Key")
 	flag.BoolVar(&conf.Restore, "r", true, "Restore Metrics from file?")
+	flag.IntVar(&conf.LogLevel, "l", 1, "Log Level, default:Warning")
 	flag.Parse()
 
 	// Init Config from Env
 	conf.EnvInit()
-	fmt.Println(*conf)
+
+	// Init Logger
+	logger, err := logger.NewLogger("server.log", conf.LogLevel)
+	if err != nil {
+		log.Fatal("cannot initialize zap.logger")
+	}
+
+	logger.Info(conf.String())
 
 	// Init Storage
 	var database storage.Storage
@@ -39,14 +48,14 @@ func main() {
 		database = storage.NewStorageMem()
 		if conf.Restore {
 			if err := files.LoadData(conf.StoreFile, database); err != nil {
-				log.Fatal(err)
+				logger.Fatal(fmt.Sprintf("can't load data from file: %s", err.Error()))
 			}
 		}
 	} else {
 		var err error
 		database, err = storage.NewDatabaseConnect(conf.DatabaseDSN)
 		if err != nil {
-			log.Fatal(err)
+			logger.Fatal(fmt.Sprintf("can't connect to database: %s", err.Error()))
 		}
 	}
 	defer database.Close()
@@ -82,7 +91,7 @@ func main() {
 		// Init Saver
 		storeInterval, err := time.ParseDuration(conf.StoreInterval)
 		if err != nil {
-			log.Fatal(err)
+			logger.Fatal(fmt.Sprintf("can't parse store inverval: %s", err.Error()))
 		}
 		tickerSave := time.NewTicker(storeInterval)
 		go func() {
@@ -90,7 +99,7 @@ func main() {
 				<-tickerSave.C
 				err := files.SaveData(conf.StoreFile, database)
 				if err != nil {
-					log.Fatal(err)
+					logger.Fatal(fmt.Sprintf("can't save data to file: %s", err.Error()))
 				}
 			}
 		}()
@@ -99,12 +108,12 @@ func main() {
 		defer func() {
 			err := files.SaveData(conf.StoreFile, database)
 			if err != nil {
-				fmt.Printf("Graceful Shutdown error: %v", err)
+				logger.Error(fmt.Sprintf("Graceful Shutdown error: %s", err.Error()))
 			} else {
-				fmt.Println("Graceful Shutdown Success!")
+				logger.Info("Graceful Shutdown Success!")
 			}
 		}()
-		defer fmt.Println("\nGraceful Shutdown Started!")
+		defer logger.Info("Graceful Shutdown Started!")
 	}
 	// Init Server
 	server := &http.Server{
@@ -113,7 +122,7 @@ func main() {
 	}
 
 	go func() {
-		log.Fatal(server.ListenAndServe())
+		logger.Fatal(server.ListenAndServe().Error())
 	}()
 
 	// Handle os.Exit

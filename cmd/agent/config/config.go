@@ -14,6 +14,7 @@ type Config struct {
 	SendInterval   string   `env:"REPORT_INTERVAL"` //envDefault:"10s"`
 	Key            string   `env:"KEY"`             //envDefault:""`
 	Batch          bool     `json:"-" env:"-"`
+	LogLevel       int      `json:"-" env:"LOG_LEVEL"`
 }
 
 func (c *Config) EnvInit() {
@@ -24,7 +25,8 @@ func (c *Config) EnvInit() {
 }
 
 func (c Config) String() string {
-	cString, err := json.MarshalIndent(c, "", "    ")
+	//cString, err := json.MarshalIndent(c, "", "    ")
+	cString, err := json.Marshal(c)
 	if err != nil {
 		return ""
 	}
