@@ -29,7 +29,7 @@ func TestHashHMAC(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := HashHMAC(tt.args.src, tt.args.key)
-			if got != string(tt.want) {
+			if got != tt.want {
 				t.Errorf("HashHMAC() = %v, want %v", got, tt.want)
 				assert.Equal(t, tt.want, got)
 				fmt.Printf("%x\n", got)

@@ -9,9 +9,14 @@ import (
 	"net/http"
 )
 
+const (
+	Counter = "counter"
+	Gauge   = "gauge"
+)
+
 func updateHelper(w http.ResponseWriter, s storage.Storage, m *Metrics, key string) error {
 	switch m.MType {
-	case "counter":
+	case Counter:
 		// Проверим валидность хеша
 		if m.Hash != "" && key != "" {
 			hash := hasher.HashHMAC(fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta), key)
@@ -36,14 +41,19 @@ func updateHelper(w http.ResponseWriter, s storage.Storage, m *Metrics, key stri
 		newValue := *m.Delta
 
 		// Добавляем значение к прошлому и записываем в сторадж
-		resultValue := value.(storage.Counter) + storage.Counter(newValue)
+		oldValue, ok := value.(storage.Counter)
+		if !ok {
+			http.Error(w, "500. Internal Server Error", http.StatusInternalServerError)
+			return errors.New("cannot make assertion (storage.Counter)")
+		}
+		resultValue := oldValue + storage.Counter(newValue)
 		err = s.Write(m.ID, resultValue)
 		if err != nil {
 			http.Error(w, "500. Internal Server Error", http.StatusInternalServerError)
 			return err
 		}
 
-	case "gauge":
+	case Gauge:
 		if m.Value == nil {
 			http.Error(w, "no value found", http.StatusBadRequest)
 			return errors.New("no value found")

@@ -12,6 +12,11 @@ import (
 	"aprokhorov-praktikum/internal/hasher"
 )
 
+const (
+	Counter = "counter"
+	Gauge   = "gauge"
+)
+
 type Sender struct {
 	Server string
 	Port   string
@@ -90,7 +95,7 @@ func (s *Sender) helperSendMetricJSON(mtype string, name string, value string, k
 	req.MType = mtype
 
 	switch mtype {
-	case "counter":
+	case Counter:
 		rValue, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return Metrics{}, err
@@ -99,7 +104,7 @@ func (s *Sender) helperSendMetricJSON(mtype string, name string, value string, k
 		if key != "" {
 			req.Hash = hasher.HashHMAC(fmt.Sprintf("%s:counter:%d", name, rValue), key)
 		}
-	case "gauge":
+	case Gauge:
 		rValue, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return Metrics{}, err

@@ -25,9 +25,9 @@ func Get(s storage.Reader) http.HandlerFunc {
 
 		var respond interface{}
 		switch req.MType {
-		case "counter":
+		case Counter:
 			respond = *req.Delta
-		case "gauge":
+		case Gauge:
 			respond = *req.Value
 		}
 

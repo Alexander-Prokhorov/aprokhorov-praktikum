@@ -82,7 +82,7 @@ func main() {
 			switch conf.Batch {
 			case true:
 				go func(metric map[string]map[string]string, key string) {
-					err = send.SendMetricBatch(metrics, key)
+					err = send.SendMetricBatch(metric, key)
 					errHandle("Sender Batch error: %s", err, logger)
 				}(metrics, conf.Key)
 			case false:

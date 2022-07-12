@@ -16,7 +16,6 @@ type Pgs struct {
 	mutex      *sync.RWMutex
 	buffer     Metrics
 	bufferSize int
-	ctx        context.Context
 }
 
 func NewDatabaseConnect(dbPath string) (Pgs, error) {
@@ -37,10 +36,9 @@ func NewDatabaseConnect(dbPath string) (Pgs, error) {
 			Gauge:   make(map[string]Gauge),
 		},
 		bufferSize: 10,
-		ctx:        context.Background(),
 	}
 
-	err = pgs.InitDB(pgs.ctx)
+	err = pgs.InitDB()
 	if err != nil {
 		return Pgs{}, err
 	}
@@ -48,13 +46,13 @@ func NewDatabaseConnect(dbPath string) (Pgs, error) {
 	return pgs, nil
 }
 
-func (pgs *Pgs) InitDB(ctx context.Context) error {
-	_, err := pgs.DB.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS Counter (name text PRIMARY KEY, value int8)")
+func (pgs *Pgs) InitDB() error {
+	_, err := pgs.DB.Exec("CREATE TABLE IF NOT EXISTS Counter (name text PRIMARY KEY, value int8)")
 	if err != nil {
 		return err
 	}
 
-	_, err = pgs.DB.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS Gauge (name text  PRIMARY KEY, value float8)")
+	_, err = pgs.DB.Exec("CREATE TABLE IF NOT EXISTS Gauge (name text  PRIMARY KEY, value float8)")
 	if err != nil {
 		return err
 	}
@@ -207,15 +205,15 @@ func (pgs Pgs) Flush() error {
 		return err
 	}
 
-	Stmt, err := pgs.DB.PrepareContext(pgs.ctx, "INSERT INTO Counter (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value")
+	Stmt, err := pgs.DB.Prepare("INSERT INTO Counter (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value")
 	if err != nil {
 		return err
 	}
 
-	txStmt := tx.StmtContext(pgs.ctx, Stmt)
+	txStmt := tx.Stmt(Stmt)
 
 	for metricName, metricValue := range pgs.buffer.Counter {
-		_, err := txStmt.ExecContext(pgs.ctx,
+		_, err := txStmt.Exec(
 			metricName,
 			metricValue,
 		)
@@ -224,15 +222,15 @@ func (pgs Pgs) Flush() error {
 		}
 	}
 
-	Stmt, err = pgs.DB.PrepareContext(pgs.ctx, "INSERT INTO Gauge (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value")
+	Stmt, err = pgs.DB.Prepare("INSERT INTO Gauge (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value")
 	if err != nil {
 		return err
 	}
 
-	txStmt = tx.StmtContext(pgs.ctx, Stmt)
+	txStmt = tx.Stmt(Stmt)
 
 	for metricName, metricValue := range pgs.buffer.Gauge {
-		_, err := txStmt.ExecContext(pgs.ctx,
+		_, err := txStmt.Exec(
 			metricName,
 			metricValue,
 		)
