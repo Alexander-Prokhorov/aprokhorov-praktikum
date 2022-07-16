@@ -5,7 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"aprokhorov-praktikum/cmd/agent/config"
@@ -50,7 +53,7 @@ func main() {
 	// Init Poller
 	NewMetrics := poller.NewAgentPoller()
 
-	// Poll and Send
+	// Poll and Send tickers
 	pollInterval, err := time.ParseDuration(conf.PollInterval)
 	errHandle("Config parse error: %s", err, logger)
 
@@ -59,36 +62,65 @@ func main() {
 
 	tickerPoll := time.NewTicker(pollInterval)
 	tickerSend := time.NewTicker(sendInterval)
+	syncChan := make(chan struct{})
 
+	// Init system calls
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	// Init Context and Sync
+	ctxMain, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	wg.Add(1)
 
-	go func(ctx context.Context, signal <-chan time.Time, wgr *sync.WaitGroup, metrics *poller.Poller, metricList []string, log *zap.Logger) {
+	// Make Goroutines
+	wg.Add(1)
+	go func(ctx context.Context, signal <-chan time.Time, sync chan<- struct{}, wgr *sync.WaitGroup, metrics *poller.Poller, metricList []string, log *zap.Logger) {
 		for {
 			select {
 			case <-signal:
+				sync <- struct{}{}
 				err := metrics.PollMemStats(metricList)
 				if err != nil {
-					log.Error("Poller error: " + err.Error())
+					log.Error("Poller MemStat error: " + err.Error())
 				}
 				err = metrics.PollRandomMetric()
 				if err != nil {
-					log.Error("Poller error: " + err.Error())
+					log.Error("Poller MemStat error: " + err.Error())
 				}
 				counter, err := metrics.Storage.Read("counter", "PollCount")
 				if err != nil {
-					log.Error("Poller error: " + err.Error())
+					log.Error("Poller MemStat error: " + err.Error())
 				}
-				log.Info(fmt.Sprintf("Poll Count: %v", counter))
+				log.Info(fmt.Sprintf("Poll MemStat Count: %v", counter))
 			case <-ctx.Done():
+				log.Info("Close Poller MemStat Goroutine")
 				wgr.Done()
 				return
 			}
 		}
-	}(context.Background(), tickerPoll.C, wg, NewMetrics, conf.MemStatMetrics, logger)
+	}(ctxMain, tickerPoll.C, syncChan, wg, NewMetrics, conf.MemStatMetrics, logger)
 
 	wg.Add(1)
-	go func(ctx context.Context, signal <-chan time.Time, s *sender.Sender, metrics *poller.Poller, batchStatus bool, key string, log *zap.Logger) {
+	go func(ctx context.Context, signal <-chan struct{}, wgr *sync.WaitGroup, metrics *poller.Poller, log *zap.Logger) {
+		for {
+			select {
+			case <-signal:
+				err := metrics.PollPsUtil()
+				if err != nil {
+					log.Error("Poller PSUtil error: " + err.Error())
+				}
+				log.Info("Poll PSUtil Done")
+			case <-ctx.Done():
+				log.Info("Close Poller PSUtil Goroutine")
+				wgr.Done()
+				return
+			}
+		}
+
+	}(ctxMain, syncChan, wg, NewMetrics, logger)
+
+	wg.Add(1)
+	go func(ctx context.Context, signal <-chan time.Time, wgr *sync.WaitGroup, s *sender.Sender, metrics *poller.Poller, batchStatus bool, key string, log *zap.Logger) {
 		for {
 			select {
 			case <-signal:
@@ -121,44 +153,17 @@ func main() {
 					}
 				}
 			case <-ctx.Done():
-				wg.Done()
+				log.Info("Close Sender Goroutine")
+				wgr.Done()
 				return
 			}
 		}
 
-	}(context.Background(), tickerSend.C, send, NewMetrics, conf.Batch, conf.Key, logger)
+	}(ctxMain, tickerSend.C, wg, send, NewMetrics, conf.Batch, conf.Key, logger)
 
-	/*
-		for {
-			select {
-			case <-tickerPoll.C:
-
-			case <-tickerSend.C:
-				logger.Info("Send Data to Server")
-
-				metrics, err := NewMetrics.Storage.ReadAll()
-				errHandle("can't read metrics from storage: %s", err, logger)
-
-				// Обновляем либо батчем, либо по одному
-				switch conf.Batch {
-				case true:
-					go func(metric map[string]map[string]string, key string) {
-						err = send.SendMetricBatch(metric, key)
-						errHandle("Sender Batch error: %s", err, logger)
-					}(metrics, conf.Key)
-				case false:
-					for metricType, values := range metrics {
-						for metricName, metricValue := range values {
-							go func(mtype string, name string, value string) {
-								err := send.SendMetric(mtype, name, value, conf.Key)
-								errHandle("Sender error: %s", err, logger)
-							}(metricType, metricName, metricValue)
-						}
-					}
-				}
-
-			}
-		}
-	*/
+	// Handle system calls
+	<-done
+	cancel()
 	wg.Wait()
+	logger.Info("Gracefull Close Finished")
 }
