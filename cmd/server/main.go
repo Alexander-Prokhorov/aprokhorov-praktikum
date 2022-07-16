@@ -13,7 +13,8 @@ import (
 	"aprokhorov-praktikum/cmd/server/config"
 	"aprokhorov-praktikum/cmd/server/files"
 	"aprokhorov-praktikum/cmd/server/handlers"
-	"aprokhorov-praktikum/cmd/server/storage"
+	"aprokhorov-praktikum/internal/logger"
+	"aprokhorov-praktikum/internal/storage"
 
 	"github.com/go-chi/chi"
 )
@@ -23,21 +24,41 @@ func main() {
 	// Init Flags
 	flag.StringVar(&conf.Address, "a", "127.0.0.1:8080", "An ip address for server run")
 	flag.StringVar(&conf.StoreInterval, "i", "300s", "Interval for storing Data to file")
+	flag.StringVar(&conf.DatabaseDSN, "d", "", "Path to PostgresSQL (in prefer to File storing)")
 	flag.StringVar(&conf.StoreFile, "f", "/tmp/devops-metrics-db.json", "File path to store Data")
+	flag.StringVar(&conf.Key, "k", "", "Hash Key")
 	flag.BoolVar(&conf.Restore, "r", true, "Restore Metrics from file?")
+	flag.IntVar(&conf.LogLevel, "l", 1, "Log Level, default:Warning")
 	flag.Parse()
 
 	// Init Config from Env
 	conf.EnvInit()
-	fmt.Println(*conf)
+
+	// Init Logger
+	logger, err := logger.NewLogger("server.log", conf.LogLevel)
+	if err != nil {
+		log.Fatal("cannot initialize zap.logger")
+	}
+
+	logger.Info(conf.String())
 
 	// Init Storage
-	database := storage.NewStorageMem()
-	if conf.Restore {
-		if err := files.LoadData(conf.StoreFile, database); err != nil {
-			log.Fatal(err)
+	var database storage.Storage
+	if conf.DatabaseDSN == "" {
+		database = storage.NewStorageMem()
+		if conf.Restore {
+			if err := files.LoadData(conf.StoreFile, database); err != nil {
+				logger.Fatal(fmt.Sprintf("can't load data from file: %s", err.Error()))
+			}
+		}
+	} else {
+		var err error
+		database, err = storage.NewDatabaseConnect(conf.DatabaseDSN)
+		if err != nil {
+			logger.Fatal(fmt.Sprintf("can't connect to database: %s", err.Error()))
 		}
 	}
+	defer database.Close()
 
 	// Init chi Router and setup Handlers
 	r := chi.NewRouter()
@@ -47,47 +68,53 @@ func main() {
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAll(database))
+		r.Get("/ping", handlers.Ping(database))
+
 		r.Route("/value", func(r chi.Router) {
-			r.Post("/", handlers.JSONRead(database))
+			r.Post("/", handlers.JSONRead(database, conf.Key))
 			r.Get("/{metricType}/{metricName}", handlers.Get(database))
 		})
+
 		r.Route("/update", func(r chi.Router) {
-			r.Post("/", handlers.JSONUpdate(database))
+			r.Post("/", handlers.JSONUpdate(database, conf.Key))
 			r.Post("/{metricType}/{metricName}/{metricValue}", handlers.Post(database))
 		})
+
+		r.Post("/updates/", handlers.JSONUpdates(database, conf.Key))
 	})
 
 	// Init system calls
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	// Init Saver
-	storeInterval, err := time.ParseDuration(conf.StoreInterval)
-	if err != nil {
-		log.Fatal(err)
-	}
-	tickerSave := time.NewTicker(storeInterval)
-	go func() {
-		for {
-			<-tickerSave.C
+	if conf.DatabaseDSN == "" {
+		// Init Saver
+		storeInterval, err := time.ParseDuration(conf.StoreInterval)
+		if err != nil {
+			logger.Fatal(fmt.Sprintf("can't parse store inverval: %s", err.Error()))
+		}
+		tickerSave := time.NewTicker(storeInterval)
+		go func() {
+			for {
+				<-tickerSave.C
+				err := files.SaveData(conf.StoreFile, database)
+				if err != nil {
+					logger.Fatal(fmt.Sprintf("can't save data to file: %s", err.Error()))
+				}
+			}
+		}()
+
+		// defer Save on Exit
+		defer func() {
 			err := files.SaveData(conf.StoreFile, database)
 			if err != nil {
-				log.Fatal(err)
+				logger.Error(fmt.Sprintf("Graceful Shutdown error: %s", err.Error()))
+			} else {
+				logger.Info("Graceful Shutdown Success!")
 			}
-		}
-	}()
-
-	// defer Save on Exit
-	defer func() {
-		err := files.SaveData(conf.StoreFile, database)
-		if err != nil {
-			fmt.Printf("Graceful Shutdown error: %v", err)
-		} else {
-			fmt.Println("Graceful Shutdown Success!")
-		}
-	}()
-	defer fmt.Println("\nGraceful Shutdown Started!")
-
+		}()
+		defer logger.Info("Graceful Shutdown Started!")
+	}
 	// Init Server
 	server := &http.Server{
 		Addr:    conf.Address,
@@ -95,9 +122,10 @@ func main() {
 	}
 
 	go func() {
-		log.Fatal(server.ListenAndServe())
+		logger.Fatal(server.ListenAndServe().Error())
 	}()
 
 	// Handle os.Exit
 	<-done
+
 }

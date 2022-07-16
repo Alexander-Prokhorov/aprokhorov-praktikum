@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"aprokhorov-praktikum/cmd/server/storage"
+	"aprokhorov-praktikum/internal/storage"
 )
 
-func JSONUpdate(s storage.Storage) http.HandlerFunc {
+func JSONUpdate(s storage.Storage, key string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Header.Get("Content-Type") != "application/json" {
@@ -25,9 +25,36 @@ func JSONUpdate(s storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		err := updateHelper(w, s, &jReq)
+		err := updateHelper(w, s, &jReq, key)
 		if err != nil {
 			return
+		}
+
+		http.Error(w, "", http.StatusOK)
+	}
+}
+
+func JSONUpdates(s storage.Storage, key string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		if r.Header.Get("Content-Type") != "application/json" {
+			errorText := fmt.Sprintf("only application/json supported, get %s", r.Header.Get("Content-Type"))
+			http.Error(w, errorText, http.StatusNotImplemented)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+
+		var jReq []Metrics
+
+		if err := json.NewDecoder(r.Body).Decode(&jReq); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		for i := range jReq {
+			err := updateHelper(w, s, &jReq[i], key)
+			if err != nil {
+				return
+			}
 		}
 
 		http.Error(w, "", http.StatusOK)

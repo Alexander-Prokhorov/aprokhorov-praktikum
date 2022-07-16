@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"aprokhorov-praktikum/cmd/server/storage"
+	"aprokhorov-praktikum/internal/storage"
 
 	"github.com/go-chi/chi"
 )
@@ -18,16 +18,16 @@ func Get(s storage.Reader) http.HandlerFunc {
 		req.MType = chi.URLParam(r, "metricType")
 		req.ID = chi.URLParam(r, "metricName")
 
-		err := readHelper(w, s, &req)
+		err := readHelper(w, s, &req, "")
 		if err != nil {
 			return
 		}
 
 		var respond interface{}
 		switch req.MType {
-		case "counter":
+		case Counter:
 			respond = *req.Delta
-		case "gauge":
+		case Gauge:
 			respond = *req.Value
 		}
 
@@ -38,26 +38,6 @@ func Get(s storage.Reader) http.HandlerFunc {
 	}
 }
 
-func readHelper(w http.ResponseWriter, s storage.Reader, m *Metrics) error {
-	value, err := s.Read(m.MType, m.ID)
-	if err != nil {
-		http.Error(w, "404. Not Found", http.StatusNotFound)
-		return err
-	}
-	switch data := value.(type) {
-	case storage.Counter:
-		respond := int64(data)
-		m.Delta = &respond
-	case storage.Gauge:
-		respond := float64(data)
-		m.Value = &respond
-	default:
-		http.Error(w, "500. Internal Server Error", http.StatusInternalServerError)
-		return err
-	}
-	return nil
-}
-
 func GetAll(s storage.Reader) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decorator := func(text string, htmlTag string) string {
@@ -66,7 +46,12 @@ func GetAll(s storage.Reader) http.HandlerFunc {
 
 		var htmlPage string
 		htmlPage += decorator("All Metrics", "h1")
-		for metricType, metrics := range s.ReadAll() {
+		metrics, err := s.ReadAll()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("internal server error: %s", err), http.StatusInternalServerError)
+			return
+		}
+		for metricType, metrics := range metrics {
 			htmlPage += decorator(metricType, "h2")
 			for metricName, MetricValue := range metrics {
 				htmlPage += decorator(metricName+" = "+MetricValue, "div")
@@ -75,7 +60,7 @@ func GetAll(s storage.Reader) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "text/html")
 
-		_, err := w.Write([]byte(htmlPage))
+		_, err = w.Write([]byte(htmlPage))
 		if err != nil {
 			panic(err)
 		}

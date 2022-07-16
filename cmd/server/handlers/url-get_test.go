@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"aprokhorov-praktikum/cmd/server/handlers"
-	"aprokhorov-praktikum/cmd/server/storage"
+	"aprokhorov-praktikum/internal/storage"
 
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"

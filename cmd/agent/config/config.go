@@ -12,6 +12,9 @@ type Config struct {
 	Address        string   `env:"ADDRESS"`         //envDefault:"127.0.0.1:8080"`
 	PollInterval   string   `env:"POLL_INTERVAL"`   //envDefault:"2s"`
 	SendInterval   string   `env:"REPORT_INTERVAL"` //envDefault:"10s"`
+	Key            string   `env:"KEY"`             //envDefault:""`
+	Batch          bool     `json:"-" env:"-"`
+	LogLevel       int      `json:"-" env:"LOG_LEVEL"`
 }
 
 func (c *Config) EnvInit() {
@@ -22,7 +25,8 @@ func (c *Config) EnvInit() {
 }
 
 func (c Config) String() string {
-	cString, err := json.MarshalIndent(c, "", "    ")
+	//cString, err := json.MarshalIndent(c, "", "    ")
+	cString, err := json.Marshal(c)
 	if err != nil {
 		return ""
 	}
@@ -30,7 +34,10 @@ func (c Config) String() string {
 }
 
 func NewAgentConfig() *Config {
-	return &Config{MemStatMetrics: sliceMemStat()}
+	return &Config{
+		MemStatMetrics: sliceMemStat(),
+		Batch:          true,
+	}
 }
 
 func sliceMemStat() []string {
