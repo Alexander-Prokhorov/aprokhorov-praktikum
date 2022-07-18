@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"aprokhorov-praktikum/internal/storage"
+
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 type Poller struct {
@@ -80,6 +83,33 @@ func (p *Poller) PollMemStats(lookupMemStat []string) error {
 	err = p.Storage.Write("PollCount", counter)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (p *Poller) PollPsUtil() error {
+	memory, err := mem.VirtualMemory()
+	if err != nil {
+		return err
+	}
+
+	cpuSlice, err := cpu.Percent(time.Second, false)
+	if err != nil {
+		return err
+	}
+	cpuData := cpuSlice[0]
+
+	data := map[string]storage.Gauge{
+		"TotalMemory":     storage.Gauge(memory.Total),
+		"FreeMemory":      storage.Gauge(memory.Free),
+		"CPUutilization1": storage.Gauge(cpuData),
+	}
+
+	for name, value := range data {
+		err = p.Storage.Write(name, value)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
