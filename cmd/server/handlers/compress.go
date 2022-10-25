@@ -16,6 +16,7 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
+// Middleware for unpack gzip data in body request
 func Unpack(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
@@ -36,6 +37,7 @@ func Unpack(next http.Handler) http.Handler {
 	})
 }
 
+// Middleware for pack body-data in gzip
 func Pack(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 

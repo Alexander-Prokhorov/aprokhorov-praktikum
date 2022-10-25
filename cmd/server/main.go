@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,6 +18,7 @@ import (
 	"aprokhorov-praktikum/internal/storage"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 )
 
 func main() {
@@ -65,7 +67,7 @@ func main() {
 
 	r.Use(handlers.Unpack)
 	r.Use(handlers.Pack)
-
+	r.Mount("/debug", middleware.Profiler())
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAll(database))
 		r.Get("/ping", handlers.Ping(database))

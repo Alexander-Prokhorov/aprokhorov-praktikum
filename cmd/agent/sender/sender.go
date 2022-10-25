@@ -17,6 +17,7 @@ const (
 	Gauge   = "gauge"
 )
 
+// Agent Sender Data
 type Sender struct {
 	Server string
 	Port   string
@@ -24,6 +25,7 @@ type Sender struct {
 	Client http.Client
 }
 
+// Create and init new Agent Sender
 func NewAgentSender(address string) *Sender {
 	var s Sender
 	s.Client = http.Client{
@@ -40,14 +42,17 @@ func NewAgentSender(address string) *Sender {
 	return &s
 }
 
+// Send Metric to Server
 func (s *Sender) SendMetric(mtype string, name string, value string, key string) error {
 	return s.SendMetricJSON(mtype, name, value, key)
 }
 
+// Send Batch of metrics to Server
 func (s *Sender) SendMetricBatch(metrics map[string]map[string]string, key string) error {
 	return s.SendMetricJSONBatch(metrics, key)
 }
 
+// Send Metrics by POST-req to Server url-encoded
 func (s *Sender) SendMetricURL(mtype string, name string, value string, key string) error {
 	s.URL.Path = "update/" + mtype + "/" + name + "/" + value
 	request, err := http.NewRequest(http.MethodPost, s.URL.String(), nil)
@@ -63,6 +68,7 @@ func (s *Sender) SendMetricURL(mtype string, name string, value string, key stri
 	return nil
 }
 
+// Send Metric by POST-req for Server JSON-body
 func (s *Sender) SendMetricJSON(mtype string, name string, value string, key string) error {
 	s.URL.Path = "update/"
 
@@ -117,6 +123,7 @@ func (s *Sender) helperSendMetricJSON(mtype string, name string, value string, k
 	return req, nil
 }
 
+// Send batch of Metrics by POST-req with JSON-body
 func (s *Sender) SendMetricJSONBatch(metrics map[string]map[string]string, key string) error {
 	s.URL.Path = "updates/"
 

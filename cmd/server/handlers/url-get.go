@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// Handler for GET metric value by url-encoded input
 func Get(s storage.Reader) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
@@ -38,6 +39,7 @@ func Get(s storage.Reader) http.HandlerFunc {
 	}
 }
 
+// Handler for GET all metric values by URL-encoded input
 func GetAll(s storage.Reader) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decorator := func(text string, htmlTag string) string {

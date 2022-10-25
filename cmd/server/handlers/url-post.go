@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// Handler for POST update metric value by url-encoded input
 func Post(s storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req Metrics

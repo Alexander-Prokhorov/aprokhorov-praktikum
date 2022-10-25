@@ -8,6 +8,7 @@ import (
 	"aprokhorov-praktikum/internal/storage"
 )
 
+// Handler for POST update single metric value by JSON input in BODY
 func JSONUpdate(s storage.Storage, key string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -34,6 +35,7 @@ func JSONUpdate(s storage.Storage, key string) http.HandlerFunc {
 	}
 }
 
+// Handler for POST update multiple metrics by JSON input body
 func JSONUpdates(s storage.Storage, key string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

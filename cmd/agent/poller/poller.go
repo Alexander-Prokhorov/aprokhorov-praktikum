@@ -13,10 +13,12 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 )
 
+// Poller Data
 type Poller struct {
 	Storage storage.Storage
 }
 
+// Init of Poller with new MemStorage
 func NewAgentPoller() *Poller {
 	var p Poller
 	p.Storage = storage.NewStorageMem()
@@ -27,6 +29,7 @@ func NewAgentPoller() *Poller {
 	return &p
 }
 
+// Generate and Save random metric
 func (p *Poller) PollRandomMetric() error {
 	rand.Seed(time.Now().UnixNano())
 	err := p.Storage.Write("RandomValue", storage.Gauge(rand.Float64()))
@@ -36,6 +39,7 @@ func (p *Poller) PollRandomMetric() error {
 	return nil
 }
 
+// Store Current MemStat Metrics in Poller Storage
 func (p *Poller) PollMemStats(lookupMemStat []string) error {
 
 	// Собираем метрики пакетом runtime
@@ -87,6 +91,7 @@ func (p *Poller) PollMemStats(lookupMemStat []string) error {
 	return nil
 }
 
+// Store current PsUtil Metrics in Poller storage
 func (p *Poller) PollPsUtil() error {
 	memory, err := mem.VirtualMemory()
 	if err != nil {

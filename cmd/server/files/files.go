@@ -7,6 +7,7 @@ import (
 	"aprokhorov-praktikum/internal/storage"
 )
 
+// Save data dump in local file
 func SaveData(fileName string, s storage.Storage) error {
 
 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
@@ -23,6 +24,7 @@ func SaveData(fileName string, s storage.Storage) error {
 	return nil
 }
 
+// Load data-dump from local file
 func LoadData(fileName string, s storage.Storage) error {
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
 	if err == nil {

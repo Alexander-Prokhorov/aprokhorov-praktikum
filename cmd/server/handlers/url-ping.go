@@ -8,6 +8,7 @@ import (
 	"aprokhorov-praktikum/internal/storage"
 )
 
+// Handler for GET service health check
 func Ping(s storage.Pinger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")

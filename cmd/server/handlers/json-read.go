@@ -8,6 +8,7 @@ import (
 	"aprokhorov-praktikum/internal/storage"
 )
 
+// Handler for GET metric value by json-body
 func JSONRead(s storage.Storage, key string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

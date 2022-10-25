@@ -7,6 +7,7 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
+// Agent Config Data
 type Config struct {
 	MemStatMetrics []string `json:"-"`
 	Address        string   `env:"ADDRESS"`         //envDefault:"127.0.0.1:8080"`
@@ -17,6 +18,7 @@ type Config struct {
 	LogLevel       int      `json:"-" env:"LOG_LEVEL"`
 }
 
+// Fill up Agent Config from environment variables
 func (c *Config) EnvInit() {
 	err := env.Parse(c)
 	if err != nil {
@@ -24,6 +26,8 @@ func (c *Config) EnvInit() {
 	}
 }
 
+// Return string representation of Agent Config Data.
+// For Stringer interface, used in logging.
 func (c Config) String() string {
 	//cString, err := json.MarshalIndent(c, "", "    ")
 	cString, err := json.Marshal(c)
@@ -33,6 +37,7 @@ func (c Config) String() string {
 	return string(cString)
 }
 
+// Init empty Agent Config
 func NewAgentConfig() *Config {
 	return &Config{
 		MemStatMetrics: sliceMemStat(),

@@ -122,3 +122,23 @@ func TestPost(t *testing.T) {
 		})
 	}
 }
+
+func ExamplePost() {
+	// How to use Post handler
+
+	// Init any storage that compatible with storage.Storage interface{}
+	database := storage.NewStorageMem()
+
+	// Init chi-router
+	r := chi.NewRouter()
+
+	// Add Get handler endpoint
+	r.Post("/", handlers.Post(database))
+
+	// Init and Run Server
+	server := &http.Server{
+		Addr:    ":8080",
+		Handler: r,
+	}
+	_ = server.ListenAndServe()
+}
