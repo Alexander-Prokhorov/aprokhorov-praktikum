@@ -11,12 +11,12 @@ import (
 	"syscall"
 	"time"
 
-	"aprokhorov-praktikum/cmd/agent/config"
-	"aprokhorov-praktikum/cmd/agent/poller"
-	"aprokhorov-praktikum/cmd/agent/sender"
-	"aprokhorov-praktikum/internal/logger"
-
 	"go.uber.org/zap"
+
+	"aprokhorov-praktikum/cmd/agent/config"
+	"aprokhorov-praktikum/internal/logger"
+	"aprokhorov-praktikum/internal/poller"
+	"aprokhorov-praktikum/internal/sender"
 )
 
 func errHandle(text string, err error, logger *zap.Logger) {
@@ -74,33 +74,48 @@ func main() {
 
 	// Make Goroutines
 	wg.Add(1)
-	go func(ctx context.Context, signal <-chan time.Time, sync chan<- struct{}, wgr *sync.WaitGroup, metrics *poller.Poller, metricList []string, log *zap.Logger) {
+
+	go func(
+		ctx context.Context,
+		signal <-chan time.Time,
+		sync chan<- struct{},
+		wgr *sync.WaitGroup,
+		metrics *poller.Poller,
+		metricList []string,
+		log *zap.Logger,
+	) {
 		for {
 			select {
 			case <-signal:
 				sync <- struct{}{}
+
 				err := metrics.PollMemStats(metricList)
 				if err != nil {
 					log.Error("Poller MemStat error: " + err.Error())
 				}
+
 				err = metrics.PollRandomMetric()
 				if err != nil {
 					log.Error("Poller MemStat error: " + err.Error())
 				}
+
 				counter, err := metrics.Storage.Read("counter", "PollCount")
 				if err != nil {
 					log.Error("Poller MemStat error: " + err.Error())
 				}
+
 				log.Info(fmt.Sprintf("Poll MemStat Count: %v", counter))
 			case <-ctx.Done():
 				log.Info("Close Poller MemStat Goroutine")
 				wgr.Done()
+
 				return
 			}
 		}
 	}(ctxMain, tickerPoll.C, syncChan, wg, NewMetrics, conf.MemStatMetrics, logger)
 
 	wg.Add(1)
+
 	go func(ctx context.Context, signal <-chan struct{}, wgr *sync.WaitGroup, metrics *poller.Poller, log *zap.Logger) {
 		for {
 			select {
@@ -109,18 +124,29 @@ func main() {
 				if err != nil {
 					log.Error("Poller PSUtil error: " + err.Error())
 				}
+
 				log.Info("Poll PSUtil Done")
 			case <-ctx.Done():
 				log.Info("Close Poller PSUtil Goroutine")
 				wgr.Done()
+
 				return
 			}
 		}
-
 	}(ctxMain, syncChan, wg, NewMetrics, logger)
 
 	wg.Add(1)
-	go func(ctx context.Context, signal <-chan time.Time, wgr *sync.WaitGroup, s *sender.Sender, metrics *poller.Poller, batchStatus bool, key string, log *zap.Logger) {
+
+	go func(
+		ctx context.Context,
+		signal <-chan time.Time,
+		wgr *sync.WaitGroup,
+		s *sender.Sender,
+		metrics *poller.Poller,
+		batchStatus bool,
+		key string,
+		log *zap.Logger,
+	) {
 		for {
 			select {
 			case <-signal:
@@ -155,15 +181,15 @@ func main() {
 			case <-ctx.Done():
 				log.Info("Close Sender Goroutine")
 				wgr.Done()
+
 				return
 			}
 		}
-
 	}(ctxMain, tickerSend.C, wg, send, NewMetrics, conf.Batch, conf.Key, logger)
 
 	// Handle system calls
 	<-done
 	cancel()
 	wg.Wait()
-	logger.Info("Gracefull Close Finished")
+	logger.Info("Graceful Close Finished")
 }

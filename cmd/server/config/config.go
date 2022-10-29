@@ -18,15 +18,14 @@ type Config struct {
 	LogLevel      int    `json:"-" env:"LOG_LEVEL"`
 }
 
-// Create new empty Server Config
+// Create new empty Server Config.
 func NewServerConfig() *Config {
 	return &Config{}
 }
 
 // Init Server Config values from environment variables.
 func (c *Config) EnvInit() {
-	err := env.Parse(c)
-	if err != nil {
+	if err := env.Parse(c); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -34,10 +33,11 @@ func (c *Config) EnvInit() {
 // Return string representation of Server Config Data.
 // For Stringer interface, used in logging.
 func (c Config) String() string {
-	//cString, err := json.MarshalIndent(c, "", "    ")
+	// cString, err := json.MarshalIndent(c, "", "    ")
 	cString, err := json.Marshal(c)
 	if err != nil {
 		return ""
 	}
+
 	return string(cString)
 }

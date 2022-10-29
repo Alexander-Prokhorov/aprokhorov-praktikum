@@ -1,22 +1,26 @@
-package poller
+package poller_test
 
 import (
-	"fmt"
 	"testing"
 
-	"aprokhorov-praktikum/cmd/agent/config"
-	"aprokhorov-praktikum/internal/storage"
-
 	"github.com/stretchr/testify/assert"
+
+	"aprokhorov-praktikum/cmd/agent/config"
+	"aprokhorov-praktikum/cmd/agent/poller"
+	"aprokhorov-praktikum/internal/storage"
 )
 
 func TestMetrics_PollMemStats(t *testing.T) {
+	t.Parallel()
+
 	type fields struct {
-		poller Poller
+		poller poller.Poller
 	}
+
 	type args struct {
 		config config.Config
 	}
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -26,7 +30,7 @@ func TestMetrics_PollMemStats(t *testing.T) {
 		{
 			name: "Test for empty Data",
 			fields: fields{
-				poller: Poller{},
+				poller: poller.Poller{},
 			},
 			args: args{
 				config: config.Config{},
@@ -34,11 +38,13 @@ func TestMetrics_PollMemStats(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
 
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tt.args.config = *config.NewAgentConfig()
-			tt.fields.poller = *NewAgentPoller()
+			tt.fields.poller = *poller.NewAgentPoller()
 
 			err := tt.fields.poller.PollMemStats(tt.args.config.MemStatMetrics)
 			if (err != nil) != tt.wantErr {
@@ -50,7 +56,6 @@ func TestMetrics_PollMemStats(t *testing.T) {
 			data, err := tt.fields.poller.Storage.ReadAll()
 			assert.NoError(t, err)
 			gaugeValues := data["gauge"]
-			fmt.Print(gaugeValues)
 			lenGot := len(gaugeValues)
 			assert.Equal(t, lenWant, lenGot)
 

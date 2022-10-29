@@ -5,27 +5,32 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"aprokhorov-praktikum/cmd/server/handlers"
-	"aprokhorov-praktikum/internal/storage"
-
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
+
+	"aprokhorov-praktikum/cmd/server/handlers"
+	"aprokhorov-praktikum/internal/storage"
 )
 
 func TestGet(t *testing.T) {
+	t.Parallel()
+
 	type values struct {
 		name  string
 		value interface{}
 	}
+
 	type args struct {
 		s      storage.Storage
 		url    string
 		values []values
 	}
+
 	type want struct {
 		code     int
 		response string
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -58,8 +63,9 @@ func TestGet(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-
+			t.Parallel()
 			// Заполним базу тестовыми данными
 			tt.args.s = storage.NewStorageMem()
 			for _, value := range tt.args.values {
@@ -88,7 +94,6 @@ func TestGet(t *testing.T) {
 
 func ExampleGet() {
 	// How to use Get handler
-
 	// Init any storage that compatible with storage.Storage interface{}
 	database := storage.NewStorageMem()
 

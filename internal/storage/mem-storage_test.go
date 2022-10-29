@@ -1,43 +1,50 @@
-package storage
+package storage_test
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"aprokhorov-praktikum/internal/storage"
 )
 
 func TestNewStorageMem(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
-		want *MemStorage
+		want *storage.MemStorage
 	}{
 		{
 			name: "Creation of MemStorage",
-			want: &MemStorage{
-				Metrics: Metrics{
-					Gauge:   make(map[string]Gauge),
-					Counter: make(map[string]Counter),
+			want: &storage.MemStorage{
+				Metrics: storage.Metrics{
+					Gauge:   make(map[string]storage.Gauge),
+					Counter: make(map[string]storage.Counter),
 				},
-				mutex: &sync.RWMutex{},
 			},
 		},
 	}
+
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewStorageMem(); !assert.Equal(t, tt.want, got) {
-				t.Errorf("NewStorageMem() = %v, want %v", got, tt.want)
+			t.Parallel()
+			if got := storage.NewStorageMem(); !assert.Equal(t, tt.want.Metrics, got.Metrics) {
+				t.Errorf("NewStorageMem() = %v, want %v", got.Metrics, tt.want.Metrics)
 			}
 		})
 	}
 }
 
 func TestMemStorage_Write(t *testing.T) {
+	t.Parallel()
 
 	type args struct {
 		metricName string
 		value      interface{}
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -47,7 +54,7 @@ func TestMemStorage_Write(t *testing.T) {
 			name: "MemStorage Counter Write Test",
 			args: args{
 				metricName: "NewMetric",
-				value:      Counter(1),
+				value:      storage.Counter(1),
 			},
 			wantErr: false,
 		},
@@ -55,7 +62,7 @@ func TestMemStorage_Write(t *testing.T) {
 			name: "MemStorage Gauge Write Test",
 			args: args{
 				metricName: "NewMetricGauge",
-				value:      Gauge(1.1),
+				value:      storage.Gauge(1.1),
 			},
 			wantErr: false,
 		},
@@ -68,9 +75,12 @@ func TestMemStorage_Write(t *testing.T) {
 			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			ms := NewStorageMem()
+			t.Parallel()
+			ms := storage.NewStorageMem()
 			if err := ms.Write(tt.args.metricName, tt.args.value); (err != nil) != tt.wantErr {
 				t.Errorf("MemStorage.Write() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -79,11 +89,13 @@ func TestMemStorage_Write(t *testing.T) {
 }
 
 func TestMemStorage_Read(t *testing.T) {
+	t.Parallel()
 
 	type args struct {
 		valueType  string
 		metricName string
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -96,7 +108,7 @@ func TestMemStorage_Read(t *testing.T) {
 				metricName: "Counter1",
 				valueType:  "counter",
 			},
-			want:    Counter(1),
+			want:    storage.Counter(1),
 			wantErr: false,
 		},
 		{
@@ -109,15 +121,17 @@ func TestMemStorage_Read(t *testing.T) {
 			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			ms := NewStorageMem()
-			err := ms.Write("Counter1", Counter(1))
+			t.Parallel()
+			ms := storage.NewStorageMem()
+			err := ms.Write("Counter1", storage.Counter(1))
 			assert.NoError(t, err, "MemCache Write Error")
 			got, err := ms.Read(tt.args.valueType, tt.args.metricName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MemStorage.Read() error = %v, wantErr %v", err, tt.wantErr)
-				return
 			}
 			if !assert.Equal(t, tt.want, got) {
 				t.Errorf("MemStorage.Read() = %v, want %v", got, tt.want)

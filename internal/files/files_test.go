@@ -1,18 +1,23 @@
-package files
+package files_test
 
 import (
-	"aprokhorov-praktikum/internal/storage"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"aprokhorov-praktikum/cmd/server/files"
+	"aprokhorov-praktikum/internal/storage"
 )
 
 func TestSaveData(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		fileName string
 		s        storage.Storage
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -27,9 +32,12 @@ func TestSaveData(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			if err := SaveData(tt.args.fileName, tt.args.s); (err != nil) != tt.wantErr {
+			t.Parallel()
+			if err := files.SaveData(tt.args.fileName, tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("SaveData() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			os.Remove(tt.args.fileName)
@@ -38,10 +46,13 @@ func TestSaveData(t *testing.T) {
 }
 
 func TestLoadData(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		fileName string
 		s        storage.Storage
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -56,11 +67,14 @@ func TestLoadData(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			err := SaveData(tt.args.fileName, tt.args.s)
+			t.Parallel()
+			err := files.SaveData(tt.args.fileName, tt.args.s)
 			assert.NoError(t, err, "SaveData to File Error")
-			if err := LoadData(tt.args.fileName, tt.args.s); (err != nil) != tt.wantErr {
+			if err := files.LoadData(tt.args.fileName, tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("LoadData() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			os.Remove(tt.args.fileName)

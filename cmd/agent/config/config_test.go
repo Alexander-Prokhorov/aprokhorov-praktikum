@@ -1,20 +1,24 @@
-package config
+package config_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"aprokhorov-praktikum/cmd/agent/config"
 )
 
 func TestNewAgentConfig(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
-		want *Config
+		want *config.Config
 	}{
 		{
 			name: "Simple Test Creation Default Config",
-			want: &Config{
-				MemStatMetrics: sliceMemStat(),
+			want: &config.Config{
+				MemStatMetrics: config.SliceMemStat(),
 				Address:        "",
 				PollInterval:   "",
 				SendInterval:   "",
@@ -24,16 +28,21 @@ func TestNewAgentConfig(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewAgentConfig(); !assert.Equal(t, tt.want, got) {
+			t.Parallel()
+			if got := config.NewAgentConfig(); !assert.Equal(t, tt.want, got) {
 				t.Errorf("NewAgentConfig() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_sliceMemStat(t *testing.T) {
+func Test_SliceMemStat(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		want []string
@@ -71,9 +80,12 @@ func Test_sliceMemStat(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			if got := sliceMemStat(); !assert.Equal(t, tt.want, got) {
+			t.Parallel()
+			if got := config.SliceMemStat(); !assert.Equal(t, tt.want, got) {
 				t.Errorf("sliceMemStat() = %v, want %v", got, tt.want)
 			}
 		})
@@ -81,6 +93,8 @@ func Test_sliceMemStat(t *testing.T) {
 }
 
 func TestConfig_String(t *testing.T) {
+	t.Parallel()
+
 	type fields struct {
 		MemStatMetrics []string
 		Address        string
@@ -90,6 +104,7 @@ func TestConfig_String(t *testing.T) {
 		Batch          bool
 		LogLevel       int
 	}
+
 	tests := []struct {
 		name   string
 		fields fields
@@ -98,7 +113,7 @@ func TestConfig_String(t *testing.T) {
 		{
 			name: "String test for Config",
 			fields: fields{
-				MemStatMetrics: sliceMemStat(),
+				MemStatMetrics: config.SliceMemStat(),
 				Address:        "",
 				PollInterval:   "",
 				SendInterval:   "",
@@ -109,9 +124,12 @@ func TestConfig_String(t *testing.T) {
 			want: "{\"Address\":\"\",\"PollInterval\":\"\",\"SendInterval\":\"\",\"Key\":\"\"}",
 		},
 	}
+
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			c := Config{
+			t.Parallel()
+			c := config.Config{
 				MemStatMetrics: tt.fields.MemStatMetrics,
 				Address:        tt.fields.Address,
 				PollInterval:   tt.fields.PollInterval,

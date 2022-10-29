@@ -14,24 +14,30 @@ import (
 )
 
 func TestPost(t *testing.T) {
+	t.Parallel()
+
 	type url struct {
 		mtype string
 		name  string
 		value string
 	}
+
 	type values struct {
 		name  string
 		value interface{}
 	}
+
 	type args struct {
 		s      storage.Storage
 		url    url
 		values []values
 	}
+
 	type want struct {
 		code  int
 		value interface{}
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -88,7 +94,9 @@ func TestPost(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			reqURL := "/" + strings.Join([]string{"update", tt.args.url.mtype, tt.args.url.name, tt.args.url.value}, "/")
 
 			// Заполним базу тестовыми данными
@@ -117,15 +125,12 @@ func TestPost(t *testing.T) {
 				t.Error("Can't fetch value from database")
 			}
 			assert.Equal(t, tt.want.value, databaseValue)
-			//}
-
 		})
 	}
 }
 
 func ExamplePost() {
 	// How to use Post handler
-
 	// Init any storage that compatible with storage.Storage interface{}
 	database := storage.NewStorageMem()
 

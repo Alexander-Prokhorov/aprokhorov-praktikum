@@ -11,14 +11,14 @@ import (
 	"syscall"
 	"time"
 
-	"aprokhorov-praktikum/cmd/server/config"
-	"aprokhorov-praktikum/cmd/server/files"
-	"aprokhorov-praktikum/cmd/server/handlers"
-	"aprokhorov-praktikum/internal/logger"
-	"aprokhorov-praktikum/internal/storage"
-
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+
+	"aprokhorov-praktikum/cmd/server/config"
+	"aprokhorov-praktikum/internal/files"
+	"aprokhorov-praktikum/internal/handlers"
+	"aprokhorov-praktikum/internal/logger"
+	"aprokhorov-praktikum/internal/storage"
 )
 
 func main() {
@@ -46,20 +46,24 @@ func main() {
 
 	// Init Storage
 	var database storage.Storage
-	if conf.DatabaseDSN == "" {
+
+	switch conf.DatabaseDSN {
+	case "":
 		database = storage.NewStorageMem()
 		if conf.Restore {
 			if err := files.LoadData(conf.StoreFile, database); err != nil {
 				logger.Fatal(fmt.Sprintf("can't load data from file: %s", err.Error()))
 			}
 		}
-	} else {
+	default:
 		var err error
+
 		database, err = storage.NewDatabaseConnect(conf.DatabaseDSN)
 		if err != nil {
 			logger.Fatal(fmt.Sprintf("can't connect to database: %s", err.Error()))
 		}
 	}
+
 	defer database.Close()
 
 	// Init chi Router and setup Handlers
@@ -95,14 +99,14 @@ func main() {
 		if err != nil {
 			logger.Fatal(fmt.Sprintf("can't parse store inverval: %s", err.Error()))
 		}
+
 		tickerSave := time.NewTicker(storeInterval)
+
 		go func() {
 			for {
 				<-tickerSave.C
-				err := files.SaveData(conf.StoreFile, database)
-				if err != nil {
-					logger.Fatal(fmt.Sprintf("can't save data to file: %s", err.Error()))
-				}
+
+				_ = files.SaveData(conf.StoreFile, database)
 			}
 		}()
 
@@ -129,5 +133,4 @@ func main() {
 
 	// Handle os.Exit
 	<-done
-
 }
