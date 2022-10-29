@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"aprokhorov-praktikum/cmd/server/files"
+	"aprokhorov-praktikum/internal/files"
 	"aprokhorov-praktikum/internal/storage"
 )
 

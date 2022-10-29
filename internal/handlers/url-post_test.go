@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"aprokhorov-praktikum/cmd/server/handlers"
-	"aprokhorov-praktikum/internal/storage"
-
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
+
+	"aprokhorov-praktikum/internal/handlers"
+	"aprokhorov-praktikum/internal/storage"
 )
 
 func TestPost(t *testing.T) {

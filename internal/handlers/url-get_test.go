@@ -8,7 +8,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
 
-	"aprokhorov-praktikum/cmd/server/handlers"
+	"aprokhorov-praktikum/internal/handlers"
 	"aprokhorov-praktikum/internal/storage"
 )
 

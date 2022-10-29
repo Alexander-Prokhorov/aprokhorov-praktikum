@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"aprokhorov-praktikum/cmd/agent/config"
-	"aprokhorov-praktikum/cmd/agent/poller"
+	"aprokhorov-praktikum/internal/poller"
 	"aprokhorov-praktikum/internal/storage"
 )
 
