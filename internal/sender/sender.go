@@ -42,7 +42,7 @@ func NewAgentSender(address string) *Sender {
 			IdleConnTimeout: defaultIdleConnTimeout,
 		},
 	}
-	s.URL = *new(url.URL)
+	s.URL = url.URL{}
 	s.URL.Scheme = "http"
 	s.URL.Host = address
 

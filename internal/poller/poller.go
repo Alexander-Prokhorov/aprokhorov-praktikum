@@ -74,7 +74,7 @@ func (p *Poller) PollMemStats(lookupMemStat []string) error {
 		switch data := targetMetric.(type) {
 		case int64:
 		case float64:
-			err := p.Storage.Write(metric, storage.Gauge(data))
+			err = p.Storage.Write(metric, storage.Gauge(data))
 			if err != nil {
 				return err
 			}

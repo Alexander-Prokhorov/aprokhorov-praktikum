@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	// used for pgx
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
@@ -71,11 +72,7 @@ func (pgs Pgs) Ping(parentCtx context.Context) error {
 	ctx, cancel := context.WithTimeout(parentCtx, time.Second*1)
 	defer cancel()
 
-	if err := pgs.DB.PingContext(ctx); err != nil {
-		return err
-	}
-
-	return nil
+	return pgs.DB.PingContext(ctx)
 }
 
 func (pgs Pgs) Read(valueType string, metricName string) (interface{}, error) {
@@ -172,11 +169,7 @@ func (pgs Pgs) Write(metricName string, value interface{}) error {
 		}
 	}
 
-	if err := pgs.Flush(); err != nil {
-		return err
-	}
-
-	return nil
+	return pgs.Flush()
 }
 
 func (pgs *Pgs) safeCounterRead(metricName string) (Counter, error) {
@@ -247,7 +240,7 @@ func (pgs Pgs) Flush() error {
 	txStmt := tx.Stmt(Stmt)
 
 	for metricName, metricValue := range pgs.buffer.Counter {
-		_, err := txStmt.Exec(
+		_, err = txStmt.Exec(
 			metricName,
 			metricValue,
 		)
@@ -269,7 +262,7 @@ func (pgs Pgs) Flush() error {
 	txStmt = tx.Stmt(Stmt)
 
 	for metricName, metricValue := range pgs.buffer.Gauge {
-		_, err := txStmt.Exec(
+		_, err = txStmt.Exec(
 			metricName,
 			metricValue,
 		)

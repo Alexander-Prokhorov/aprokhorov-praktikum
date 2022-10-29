@@ -230,3 +230,14 @@ issues:
 
   # Show only new issues created in git patch with set file path.
   # new-from-patch: path/to/patch/file
+  exclude-rules:
+    - linters:
+        - gofumpt
+      text: "File is not"
+    - linters:
+        - gosec
+      text: "G108"
+    - path: internal/poller/poller.go
+      linters:
+        - gosec
+      text: "G404"
