@@ -22,6 +22,10 @@ import (
 )
 
 func main() {
+	const (
+		defaultReadHeaderTimeout = time.Second * 5
+	)
+
 	conf := config.NewServerConfig()
 	// Init Flags
 	flag.StringVar(&conf.Address, "a", "127.0.0.1:8080", "An ip address for server run")
@@ -123,8 +127,9 @@ func main() {
 	}
 	// Init Server
 	server := &http.Server{
-		Addr:    conf.Address,
-		Handler: r,
+		Addr:              conf.Address,
+		ReadHeaderTimeout: defaultReadHeaderTimeout,
+		Handler:           r,
 	}
 
 	go func() {
