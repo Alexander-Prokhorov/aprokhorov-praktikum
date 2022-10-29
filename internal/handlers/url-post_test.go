@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
@@ -141,9 +142,11 @@ func ExamplePost() {
 	r.Post("/", handlers.Post(database))
 
 	// Init and Run Server
+	const defaultReadHeaderTimeout = time.Second * 5
 	server := &http.Server{
-		Addr:    ":8080",
-		Handler: r,
+		Addr:              ":8080",
+		Handler:           r,
+		ReadHeaderTimeout: defaultReadHeaderTimeout,
 	}
 	_ = server.ListenAndServe()
 }
