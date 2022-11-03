@@ -1,12 +1,13 @@
 package poller_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"aprokhorov-praktikum/cmd/agent/config"
-	"aprokhorov-praktikum/internal/poller"
+	"aprokhorov-praktikum/internal/agent/config"
+	"aprokhorov-praktikum/internal/agent/poller"
 	"aprokhorov-praktikum/internal/storage"
 )
 
@@ -43,23 +44,24 @@ func TestMetrics_PollMemStats(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctx := context.Background()
 			tt.args.config = *config.NewAgentConfig()
-			tt.fields.poller = *poller.NewAgentPoller()
+			tt.fields.poller = *poller.NewAgentPoller(ctx)
 
-			err := tt.fields.poller.PollMemStats(tt.args.config.MemStatMetrics)
+			err := tt.fields.poller.PollMemStats(ctx, tt.args.config.MemStatMetrics)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Poller.PollMemStats() error = %v, wantErr %v", tt.wantErr, err)
 			}
 
 			lenWant := len(tt.args.config.MemStatMetrics)
 
-			data, err := tt.fields.poller.Storage.ReadAll()
+			data, err := tt.fields.poller.Storage.ReadAll(ctx)
 			assert.NoError(t, err)
 			gaugeValues := data["gauge"]
 			lenGot := len(gaugeValues)
 			assert.Equal(t, lenWant, lenGot)
 
-			pollCount, err := tt.fields.poller.Storage.Read("counter", "PollCount")
+			pollCount, err := tt.fields.poller.Storage.Read(ctx, "counter", "PollCount")
 			if err != nil {
 				t.Error(err)
 			}

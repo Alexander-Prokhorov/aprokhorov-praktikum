@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"aprokhorov-praktikum/cmd/server/config"
+	"aprokhorov-praktikum/internal/server/config"
 )
 
 func TestNewServerConfig(t *testing.T) {

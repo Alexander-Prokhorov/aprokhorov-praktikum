@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"aprokhorov-praktikum/internal/sender"
+	"aprokhorov-praktikum/internal/agent/sender"
 )
 
 func TestSender_SendMetricURL(t *testing.T) {

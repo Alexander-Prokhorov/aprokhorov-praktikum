@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"aprokhorov-praktikum/cmd/agent/config"
+	"aprokhorov-praktikum/internal/agent/config"
 )
 
 func TestNewAgentConfig(t *testing.T) {
