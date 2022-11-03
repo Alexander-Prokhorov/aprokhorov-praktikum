@@ -237,7 +237,7 @@ issues:
     - linters:
         - gosec
       text: "G108"
-    - path: internal/poller/poller.go
+    - path: internal/agent/poller/poller.go
       linters:
         - gosec
       text: "G404"
