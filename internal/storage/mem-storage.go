@@ -31,7 +31,7 @@ func NewStorageMem() *MemStorage {
 	return &ms
 }
 
-func (ms MemStorage) Write(metricName string, value interface{}) error {
+func (ms MemStorage) Write(ctx context.Context, metricName string, value interface{}) error {
 	switch data := value.(type) {
 	case Counter:
 		ms.safeCounterWrite(metricName, data)
@@ -46,7 +46,7 @@ func (ms MemStorage) Write(metricName string, value interface{}) error {
 	return nil
 }
 
-func (ms MemStorage) Read(valueType string, metricName string) (interface{}, error) {
+func (ms MemStorage) Read(ctx context.Context, valueType string, metricName string) (interface{}, error) {
 	switch valueType {
 	case counter:
 		return ms.safeCounterRead(metricName)
@@ -57,7 +57,7 @@ func (ms MemStorage) Read(valueType string, metricName string) (interface{}, err
 	}
 }
 
-func (ms MemStorage) ReadAll() (map[string]map[string]string, error) {
+func (ms MemStorage) ReadAll(ctx context.Context) (map[string]map[string]string, error) {
 	const (
 		bitSize = 64
 		base    = 10

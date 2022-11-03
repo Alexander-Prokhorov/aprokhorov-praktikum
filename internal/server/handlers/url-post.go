@@ -45,7 +45,7 @@ func Post(s storage.Storage) http.HandlerFunc {
 			req.Value = &newValue
 		}
 
-		err := updateHelper(w, s, &req, "")
+		err := updateHelper(r.Context(), w, s, &req, "")
 		if err != nil {
 			http.Error(w, fmt.Sprintf("500. Internal Server Error: %s", err), http.StatusBadRequest)
 

@@ -1,6 +1,7 @@
 package storage_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -81,7 +82,7 @@ func TestMemStorage_Write(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ms := storage.NewStorageMem()
-			if err := ms.Write(tt.args.metricName, tt.args.value); (err != nil) != tt.wantErr {
+			if err := ms.Write(context.Background(), tt.args.metricName, tt.args.value); (err != nil) != tt.wantErr {
 				t.Errorf("MemStorage.Write() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -127,9 +128,9 @@ func TestMemStorage_Read(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ms := storage.NewStorageMem()
-			err := ms.Write("Counter1", storage.Counter(1))
+			err := ms.Write(context.Background(), "Counter1", storage.Counter(1))
 			assert.NoError(t, err, "MemCache Write Error")
-			got, err := ms.Read(tt.args.valueType, tt.args.metricName)
+			got, err := ms.Read(context.Background(), tt.args.valueType, tt.args.metricName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MemStorage.Read() error = %v, wantErr %v", err, tt.wantErr)
 			}

@@ -19,7 +19,7 @@ func Get(s storage.Reader) http.HandlerFunc {
 		req.MType = chi.URLParam(r, "metricType")
 		req.ID = chi.URLParam(r, "metricName")
 
-		err := readHelper(w, s, &req, "")
+		err := readHelper(r.Context(), w, s, &req, "")
 		if err != nil {
 			return
 		}
@@ -50,7 +50,7 @@ func GetAll(s storage.Reader) http.HandlerFunc {
 		var htmlPage string
 		htmlPage += decorator("All Metrics", "h1")
 
-		metrics, err := s.ReadAll()
+		metrics, err := s.ReadAll(r.Context())
 		if err != nil {
 			http.Error(w, fmt.Sprintf("internal server error: %s", err), http.StatusInternalServerError)
 

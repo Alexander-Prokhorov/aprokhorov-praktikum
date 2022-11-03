@@ -13,10 +13,10 @@ import (
 
 	"go.uber.org/zap"
 
-	"aprokhorov-praktikum/cmd/agent/config"
+	"aprokhorov-praktikum/internal/agent/config"
+	"aprokhorov-praktikum/internal/agent/poller"
+	"aprokhorov-praktikum/internal/agent/sender"
 	"aprokhorov-praktikum/internal/logger"
-	"aprokhorov-praktikum/internal/poller"
-	"aprokhorov-praktikum/internal/sender"
 )
 
 func errHandle(text string, err error, logger *zap.Logger) {
@@ -47,11 +47,13 @@ func main() {
 	conf.EnvInit()
 	logger.Info(conf.String())
 
+	ctx := context.Background()
+
 	// Init Sender
 	send := sender.NewAgentSender(conf.Address)
 
 	// Init Poller
-	NewMetrics := poller.NewAgentPoller()
+	NewMetrics := poller.NewAgentPoller(ctx)
 
 	// Poll and Send tickers
 	pollInterval, err := time.ParseDuration(conf.PollInterval)
@@ -89,17 +91,17 @@ func main() {
 			case <-signal:
 				sync <- struct{}{}
 
-				err := metrics.PollMemStats(metricList)
+				err := metrics.PollMemStats(ctx, metricList)
 				if err != nil {
 					log.Error("Poller MemStat error: " + err.Error())
 				}
 
-				err = metrics.PollRandomMetric()
+				err = metrics.PollRandomMetric(ctx)
 				if err != nil {
 					log.Error("Poller MemStat error: " + err.Error())
 				}
 
-				counter, err := metrics.Storage.Read("counter", "PollCount")
+				counter, err := metrics.Storage.Read(ctx, "counter", "PollCount")
 				if err != nil {
 					log.Error("Poller MemStat error: " + err.Error())
 				}
@@ -120,7 +122,7 @@ func main() {
 		for {
 			select {
 			case <-signal:
-				err := metrics.PollPsUtil()
+				err := metrics.PollPsUtil(ctx)
 				if err != nil {
 					log.Error("Poller PSUtil error: " + err.Error())
 				}
@@ -152,7 +154,7 @@ func main() {
 			case <-signal:
 				log.Info("Send Data to Server")
 
-				metricsData, err := metrics.Storage.ReadAll()
+				metricsData, err := metrics.Storage.ReadAll(ctx)
 				if err != nil {
 					log.Error("Can't read mertics from storage: " + err.Error())
 				}

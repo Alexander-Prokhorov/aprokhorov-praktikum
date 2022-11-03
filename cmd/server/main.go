@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -14,10 +15,10 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 
-	"aprokhorov-praktikum/cmd/server/config"
-	"aprokhorov-praktikum/internal/files"
-	"aprokhorov-praktikum/internal/handlers"
 	"aprokhorov-praktikum/internal/logger"
+	"aprokhorov-praktikum/internal/server/config"
+	"aprokhorov-praktikum/internal/server/files"
+	"aprokhorov-praktikum/internal/server/handlers"
 	"aprokhorov-praktikum/internal/storage"
 )
 
@@ -39,6 +40,8 @@ func main() {
 
 	// Init Config from Env
 	conf.EnvInit()
+
+	ctx := context.Background()
 
 	// Init Logger
 	logger, err := logger.NewLogger("server.log", conf.LogLevel)
@@ -62,7 +65,7 @@ func main() {
 	default:
 		var err error
 
-		database, err = storage.NewDatabaseConnect(conf.DatabaseDSN)
+		database, err = storage.NewDatabaseConnect(ctx, conf.DatabaseDSN)
 		if err != nil {
 			logger.Fatal(fmt.Sprintf("can't connect to database: %s", err.Error()))
 		}

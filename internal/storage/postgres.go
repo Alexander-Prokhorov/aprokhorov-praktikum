@@ -19,7 +19,7 @@ type Pgs struct {
 	bufferSize int
 }
 
-func NewDatabaseConnect(dbPath string) (Pgs, error) {
+func NewDatabaseConnect(ctx context.Context, dbPath string) (Pgs, error) {
 	const (
 		defaultMaxIdleConns    = 10
 		defaultMaxOpenConns    = 10
@@ -46,7 +46,7 @@ func NewDatabaseConnect(dbPath string) (Pgs, error) {
 		bufferSize: defaultBufferSize,
 	}
 
-	err = pgs.InitDB()
+	err = pgs.InitDB(ctx)
 	if err != nil {
 		return Pgs{}, err
 	}
@@ -54,13 +54,13 @@ func NewDatabaseConnect(dbPath string) (Pgs, error) {
 	return pgs, nil
 }
 
-func (pgs *Pgs) InitDB() error {
-	_, err := pgs.DB.Exec("CREATE TABLE IF NOT EXISTS Counter (name text PRIMARY KEY, value int8)")
+func (pgs *Pgs) InitDB(ctx context.Context) error {
+	_, err := pgs.DB.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS Counter (name text PRIMARY KEY, value int8)")
 	if err != nil {
 		return err
 	}
 
-	_, err = pgs.DB.Exec("CREATE TABLE IF NOT EXISTS Gauge (name text  PRIMARY KEY, value float8)")
+	_, err = pgs.DB.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS Gauge (name text  PRIMARY KEY, value float8)")
 	if err != nil {
 		return err
 	}
@@ -75,18 +75,18 @@ func (pgs Pgs) Ping(parentCtx context.Context) error {
 	return pgs.DB.PingContext(ctx)
 }
 
-func (pgs Pgs) Read(valueType string, metricName string) (interface{}, error) {
+func (pgs Pgs) Read(ctx context.Context, valueType string, metricName string) (interface{}, error) {
 	switch valueType {
 	case "counter":
-		return pgs.safeCounterRead(metricName)
+		return pgs.safeCounterRead(ctx, metricName)
 	case "gauge":
-		return pgs.safeGaugeRead(metricName)
+		return pgs.safeGaugeRead(ctx, metricName)
 	default:
 		return nil, errors.New("PGS: Get(): Only [gauge, counter] type are supported")
 	}
 }
 
-func (pgs Pgs) ReadAll() (map[string]map[string]string, error) {
+func (pgs Pgs) ReadAll(ctx context.Context) (map[string]map[string]string, error) {
 	ret := make(map[string]map[string]string)
 	ret["counter"] = make(map[string]string)
 	ret["gauge"] = make(map[string]string)
@@ -104,7 +104,7 @@ func (pgs Pgs) ReadAll() (map[string]map[string]string, error) {
 
 	// Get Values for Counter
 	pgs.mutex.RLock()
-	rows, err := pgs.DB.Query("SELECT * from Counter")
+	rows, err := pgs.DB.QueryContext(ctx, "SELECT * from Counter")
 	pgs.mutex.RUnlock()
 
 	if err != nil {
@@ -127,7 +127,7 @@ func (pgs Pgs) ReadAll() (map[string]map[string]string, error) {
 
 	// Get Values for Gauge
 	pgs.mutex.RLock()
-	rows, err = pgs.DB.Query("SELECT * from Gauge")
+	rows, err = pgs.DB.QueryContext(ctx, "SELECT * from Gauge")
 	pgs.mutex.RUnlock()
 
 	if err != nil {
@@ -151,7 +151,7 @@ func (pgs Pgs) ReadAll() (map[string]map[string]string, error) {
 	return ret, nil
 }
 
-func (pgs Pgs) Write(metricName string, value interface{}) error {
+func (pgs Pgs) Write(ctx context.Context, metricName string, value interface{}) error {
 	switch data := value.(type) {
 	case Counter:
 		pgs.buffer.Counter[metricName] = data
@@ -164,22 +164,22 @@ func (pgs Pgs) Write(metricName string, value interface{}) error {
 	}
 
 	if len(pgs.buffer.Counter)+len(pgs.buffer.Gauge) == pgs.bufferSize {
-		if err := pgs.Flush(); err != nil {
+		if err := pgs.Flush(ctx); err != nil {
 			return err
 		}
 	}
 
-	return pgs.Flush()
+	return pgs.Flush(ctx)
 }
 
-func (pgs *Pgs) safeCounterRead(metricName string) (Counter, error) {
+func (pgs *Pgs) safeCounterRead(ctx context.Context, metricName string) (Counter, error) {
 	var value struct {
 		Value int
 		Valid bool
 	}
 
 	pgs.mutex.RLock()
-	err := pgs.DB.QueryRow("SELECT value from Counter where name = $1", metricName).Scan(&value.Value)
+	err := pgs.DB.QueryRowContext(ctx, "SELECT value from Counter where name = $1", metricName).Scan(&value.Value)
 	pgs.mutex.RUnlock()
 
 	if err != nil {
@@ -193,14 +193,14 @@ func (pgs *Pgs) safeCounterRead(metricName string) (Counter, error) {
 	return Counter(value.Value), nil
 }
 
-func (pgs *Pgs) safeGaugeRead(metricName string) (Gauge, error) {
+func (pgs *Pgs) safeGaugeRead(ctx context.Context, metricName string) (Gauge, error) {
 	var value struct {
 		Value float64
 		Valid bool
 	}
 
 	pgs.mutex.RLock()
-	err := pgs.DB.QueryRow("SELECT value from Gauge where name = $1", metricName).Scan(&value.Value)
+	err := pgs.DB.QueryRowContext(ctx, "SELECT value from Gauge where name = $1", metricName).Scan(&value.Value)
 	pgs.mutex.RUnlock()
 
 	if err != nil {
@@ -218,7 +218,7 @@ func (pgs Pgs) Close() {
 	pgs.DB.Close()
 }
 
-func (pgs Pgs) Flush() error {
+func (pgs Pgs) Flush(ctx context.Context) error {
 	pgs.mutex.Lock()
 	defer pgs.mutex.Unlock()
 
@@ -227,20 +227,22 @@ func (pgs Pgs) Flush() error {
 		return err
 	}
 
-	Stmt, err := pgs.DB.Prepare(
-		"INSERT INTO Counter (name, value) " +
-			"VALUES ($1, $2) " +
-			"ON CONFLICT (name) " +
+	Stmt, err := pgs.DB.PrepareContext(
+		ctx,
+		"INSERT INTO Counter (name, value) "+
+			"VALUES ($1, $2) "+
+			"ON CONFLICT (name) "+
 			"DO UPDATE SET value = EXCLUDED.value",
 	)
 	if err != nil {
 		return err
 	}
 
-	txStmt := tx.Stmt(Stmt)
+	txStmt := tx.StmtContext(ctx, Stmt)
 
 	for metricName, metricValue := range pgs.buffer.Counter {
-		_, err = txStmt.Exec(
+		_, err = txStmt.ExecContext(
+			ctx,
 			metricName,
 			metricValue,
 		)
@@ -249,20 +251,22 @@ func (pgs Pgs) Flush() error {
 		}
 	}
 
-	Stmt, err = pgs.DB.Prepare(
-		"INSERT INTO Gauge (name, value) " +
-			"VALUES ($1, $2) " +
-			"ON CONFLICT (name) " +
+	Stmt, err = pgs.DB.PrepareContext(
+		ctx,
+		"INSERT INTO Gauge (name, value) "+
+			"VALUES ($1, $2) "+
+			"ON CONFLICT (name) "+
 			"DO UPDATE SET value = EXCLUDED.value",
 	)
 	if err != nil {
 		return err
 	}
 
-	txStmt = tx.Stmt(Stmt)
+	txStmt = tx.StmtContext(ctx, Stmt)
 
 	for metricName, metricValue := range pgs.buffer.Gauge {
-		_, err = txStmt.Exec(
+		_, err = txStmt.ExecContext(
+			ctx,
 			metricName,
 			metricValue,
 		)

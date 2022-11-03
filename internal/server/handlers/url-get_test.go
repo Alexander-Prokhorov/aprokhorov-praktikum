@@ -1,27 +1,21 @@
 package handlers_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
 
-	"aprokhorov-praktikum/internal/handlers"
+	"aprokhorov-praktikum/internal/server/handlers"
 	"aprokhorov-praktikum/internal/storage"
 )
 
-func TestPost(t *testing.T) {
+func TestGet(t *testing.T) {
 	t.Parallel()
-
-	type url struct {
-		mtype string
-		name  string
-		value string
-	}
 
 	type values struct {
 		name  string
@@ -30,13 +24,13 @@ func TestPost(t *testing.T) {
 
 	type args struct {
 		s      storage.Storage
-		url    url
+		url    string
 		values []values
 	}
 
 	type want struct {
-		code  int
-		value interface{}
+		code     int
+		response string
 	}
 
 	tests := []struct {
@@ -45,52 +39,28 @@ func TestPost(t *testing.T) {
 		want want
 	}{
 		{
-			name: "CounterAppend",
+			name: "CounterGet",
 			args: args{
 				s:   new(storage.MemStorage),
-				url: url{mtype: "counter", name: "testCounter", value: "21"},
-				values: []values{
-					{name: "testCounter", value: storage.Counter(21)},
-					{name: "testGauge", value: storage.Gauge(24)},
-				},
-			},
-			want: want{code: 200, value: storage.Counter(42)},
-		},
-		{
-			name: "CounterCreate",
-			args: args{
-				s:   new(storage.MemStorage),
-				url: url{mtype: "counter", name: "newCounter", value: "11"},
+				url: "/value/counter/testCounter",
 				values: []values{
 					{name: "testCounter", value: storage.Counter(42)},
 					{name: "testGauge", value: storage.Gauge(24)},
 				},
 			},
-			want: want{code: 200, value: storage.Counter(11)},
+			want: want{code: 200, response: "42"},
 		},
 		{
-			name: "GaugeAppend",
+			name: "GaugeGet",
 			args: args{
 				s:   new(storage.MemStorage),
-				url: url{mtype: "gauge", name: "testGauge", value: "11.1"},
+				url: "/value/gauge/testGauge",
 				values: []values{
 					{name: "testCounter", value: storage.Counter(42)},
 					{name: "testGauge", value: storage.Gauge(24)},
 				},
 			},
-			want: want{code: 200, value: storage.Gauge(11.1)},
-		},
-		{
-			name: "GaugeCreate",
-			args: args{
-				s:   new(storage.MemStorage),
-				url: url{mtype: "gauge", name: "newGauge", value: "11.1"},
-				values: []values{
-					{name: "testCounter", value: storage.Counter(42)},
-					{name: "testGauge", value: storage.Gauge(24)},
-				},
-			},
-			want: want{code: 200, value: storage.Gauge(11.1)},
+			want: want{code: 200, response: "24"},
 		},
 	}
 
@@ -98,40 +68,34 @@ func TestPost(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			reqURL := "/" + strings.Join([]string{"update", tt.args.url.mtype, tt.args.url.name, tt.args.url.value}, "/")
-
 			// Заполним базу тестовыми данными
 			tt.args.s = storage.NewStorageMem()
 			for _, value := range tt.args.values {
-				err := tt.args.s.Write(value.name, value.value)
+				err := tt.args.s.Write(context.Background(), value.name, value.value)
 				if err != nil {
 					t.Error(err)
 				}
 			}
 
 			// Создадим тестовый запрос и рекодер
-			r := httptest.NewRequest(http.MethodPost, reqURL, nil)
+			r := httptest.NewRequest(http.MethodGet, tt.args.url, nil)
 			w := httptest.NewRecorder()
 
 			// Init chi Router and setup Handlers
 			cr := chi.NewRouter()
-			cr.Post("/update/{metricType}/{metricName}/{metricValue}", handlers.Post(tt.args.s))
+			cr.Get("/value/{metricType}/{metricName}", handlers.Get(tt.args.s))
 			cr.ServeHTTP(w, r)
 			res := w.Result()
 			defer res.Body.Close()
 
 			assert.Equal(t, tt.want.code, res.StatusCode)
-			databaseValue, err := tt.args.s.Read(tt.args.url.mtype, tt.args.url.name)
-			if err != nil {
-				t.Error("Can't fetch value from database")
-			}
-			assert.Equal(t, tt.want.value, databaseValue)
+			assert.Equal(t, tt.want.response, w.Body.String())
 		})
 	}
 }
 
-func ExamplePost() {
-	// How to use Post handler
+func ExampleGet() {
+	// How to use Get handler
 	// Init any storage that compatible with storage.Storage interface{}
 	database := storage.NewStorageMem()
 
@@ -139,7 +103,7 @@ func ExamplePost() {
 	r := chi.NewRouter()
 
 	// Add Get handler endpoint
-	r.Post("/", handlers.Post(database))
+	r.Post("/", handlers.Get(database))
 
 	// Init and Run Server
 	const defaultReadHeaderTimeout = time.Second * 5

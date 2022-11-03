@@ -28,7 +28,7 @@ func JSONUpdate(s storage.Storage, key string) http.HandlerFunc {
 			return
 		}
 
-		err := updateHelper(w, s, &jReq, key)
+		err := updateHelper(r.Context(), w, s, &jReq, key)
 		if err != nil {
 			return
 		}
@@ -58,7 +58,7 @@ func JSONUpdates(s storage.Storage, key string) http.HandlerFunc {
 		}
 
 		for i := range jReq {
-			err := updateHelper(w, s, &jReq[i], key)
+			err := updateHelper(r.Context(), w, s, &jReq[i], key)
 			if err != nil {
 				return
 			}

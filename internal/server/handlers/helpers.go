@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/hmac"
 	"errors"
 	"fmt"
@@ -16,7 +17,7 @@ const (
 	contentJSON = "application/json"
 )
 
-func updateHelper(w http.ResponseWriter, s storage.Storage, m *Metrics, key string) error {
+func updateHelper(ctx context.Context, w http.ResponseWriter, s storage.Storage, m *Metrics, key string) error {
 	switch m.MType {
 	case Counter:
 		// Проверим валидность хеша
@@ -30,7 +31,7 @@ func updateHelper(w http.ResponseWriter, s storage.Storage, m *Metrics, key stri
 		}
 
 		// Читаем метрику из базы
-		value, err := s.Read(m.MType, m.ID)
+		value, err := s.Read(ctx, m.MType, m.ID)
 		if err != nil {
 			// Если метрика не найдена, то устанавливаем счетчик в ноль
 			value = storage.Counter(0)
@@ -55,7 +56,7 @@ func updateHelper(w http.ResponseWriter, s storage.Storage, m *Metrics, key stri
 
 		resultValue := oldValue + storage.Counter(newValue)
 
-		err = s.Write(m.ID, resultValue)
+		err = s.Write(ctx, m.ID, resultValue)
 		if err != nil {
 			http.Error(w, "500. Internal Server Error", http.StatusInternalServerError)
 
@@ -72,7 +73,7 @@ func updateHelper(w http.ResponseWriter, s storage.Storage, m *Metrics, key stri
 		newValue := *m.Value
 
 		// Просто записываем в сторадж
-		err := s.Write(m.ID, storage.Gauge(newValue))
+		err := s.Write(ctx, m.ID, storage.Gauge(newValue))
 		if err != nil {
 			http.Error(w, "500. Internal Server Error", http.StatusInternalServerError)
 
@@ -89,10 +90,10 @@ func updateHelper(w http.ResponseWriter, s storage.Storage, m *Metrics, key stri
 	return nil
 }
 
-func readHelper(w http.ResponseWriter, s storage.Reader, m *Metrics, key string) error {
+func readHelper(ctx context.Context, w http.ResponseWriter, s storage.Reader, m *Metrics, key string) error {
 	var hashString string
 
-	value, err := s.Read(m.MType, m.ID)
+	value, err := s.Read(ctx, m.MType, m.ID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("404. Not Found. %s", err), http.StatusNotFound)
 

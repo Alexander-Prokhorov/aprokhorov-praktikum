@@ -28,7 +28,7 @@ func JSONRead(s storage.Storage, key string) http.HandlerFunc {
 			return
 		}
 
-		err := readHelper(w, s, &jReq, key)
+		err := readHelper(r.Context(), w, s, &jReq, key)
 		if err != nil {
 			return
 		}
