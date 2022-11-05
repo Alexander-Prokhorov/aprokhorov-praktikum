@@ -1,37 +1,45 @@
 package handlers_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"aprokhorov-praktikum/cmd/server/handlers"
-	"aprokhorov-praktikum/internal/storage"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
+
+	"aprokhorov-praktikum/internal/server/handlers"
+	"aprokhorov-praktikum/internal/storage"
 )
 
 func TestPost(t *testing.T) {
+	t.Parallel()
+
 	type url struct {
 		mtype string
 		name  string
 		value string
 	}
+
 	type values struct {
 		name  string
 		value interface{}
 	}
+
 	type args struct {
 		s      storage.Storage
 		url    url
 		values []values
 	}
+
 	type want struct {
 		code  int
 		value interface{}
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -88,13 +96,15 @@ func TestPost(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			reqURL := "/" + strings.Join([]string{"update", tt.args.url.mtype, tt.args.url.name, tt.args.url.value}, "/")
 
 			// Заполним базу тестовыми данными
 			tt.args.s = storage.NewStorageMem()
 			for _, value := range tt.args.values {
-				err := tt.args.s.Write(value.name, value.value)
+				err := tt.args.s.Write(context.Background(), value.name, value.value)
 				if err != nil {
 					t.Error(err)
 				}
@@ -112,13 +122,32 @@ func TestPost(t *testing.T) {
 			defer res.Body.Close()
 
 			assert.Equal(t, tt.want.code, res.StatusCode)
-			databaseValue, err := tt.args.s.Read(tt.args.url.mtype, tt.args.url.name)
+			databaseValue, err := tt.args.s.Read(context.Background(), tt.args.url.mtype, tt.args.url.name)
 			if err != nil {
 				t.Error("Can't fetch value from database")
 			}
 			assert.Equal(t, tt.want.value, databaseValue)
-			//}
-
 		})
 	}
+}
+
+func ExamplePost() {
+	// How to use Post handler
+	// Init any storage that compatible with storage.Storage interface{}
+	database := storage.NewStorageMem()
+
+	// Init chi-router
+	r := chi.NewRouter()
+
+	// Add Get handler endpoint
+	r.Post("/", handlers.Post(database))
+
+	// Init and Run Server
+	const defaultReadHeaderTimeout = time.Second * 5
+	server := &http.Server{
+		Addr:              ":8080",
+		Handler:           r,
+		ReadHeaderTimeout: defaultReadHeaderTimeout,
+	}
+	_ = server.ListenAndServe()
 }

@@ -17,6 +17,7 @@ const (
 	Gauge   = "gauge"
 )
 
+// Agent Sender Data.
 type Sender struct {
 	Server string
 	Port   string
@@ -24,45 +25,62 @@ type Sender struct {
 	Client http.Client
 }
 
+// Create and init new Agent Sender.
 func NewAgentSender(address string) *Sender {
+	const (
+		defaultTimeout         = 5
+		defaultMaxIdleConns    = 5
+		defaultIdleConnTimeout = 5
+	)
+
 	var s Sender
+
 	s.Client = http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: time.Second * defaultTimeout,
 		Transport: &http.Transport{
-			MaxIdleConns:    5,
-			IdleConnTimeout: 5,
+			MaxIdleConns:    defaultMaxIdleConns,
+			IdleConnTimeout: defaultIdleConnTimeout,
 		},
 	}
-	s.URL = *new(url.URL)
+	s.URL = url.URL{}
 	s.URL.Scheme = "http"
 	s.URL.Host = address
 
 	return &s
 }
 
+// Send Metric to Server.
 func (s *Sender) SendMetric(mtype string, name string, value string, key string) error {
 	return s.SendMetricJSON(mtype, name, value, key)
 }
 
+// Send Batch of metrics to Server.
 func (s *Sender) SendMetricBatch(metrics map[string]map[string]string, key string) error {
 	return s.SendMetricJSONBatch(metrics, key)
 }
 
+// Send Metrics by POST-req to Server url-encoded.
 func (s *Sender) SendMetricURL(mtype string, name string, value string, key string) error {
 	s.URL.Path = "update/" + mtype + "/" + name + "/" + value
+
 	request, err := http.NewRequest(http.MethodPost, s.URL.String(), nil)
 	if err != nil {
 		return err
 	}
+
 	request.Header.Set("Content-Type", "text/plain")
+
 	res, err := s.Client.Do(request)
 	if err != nil {
 		return err
 	}
+
 	res.Body.Close()
+
 	return nil
 }
 
+// Send Metric by POST-req for Server JSON-body.
 func (s *Sender) SendMetricJSON(mtype string, name string, value string, key string) error {
 	s.URL.Path = "update/"
 
@@ -80,43 +98,56 @@ func (s *Sender) SendMetricJSON(mtype string, name string, value string, key str
 	if err != nil {
 		return err
 	}
+
 	request.Header.Set("Content-Type", "application/json")
+
 	res, err := s.Client.Do(request)
 	if err != nil {
 		return err
 	}
+
 	res.Body.Close()
+
 	return nil
 }
 
 func (s *Sender) helperSendMetricJSON(mtype string, name string, value string, key string) (Metrics, error) {
+	const (
+		bitSize = 64
+		base    = 10
+	)
+
 	var req Metrics
 	req.ID = name
 	req.MType = mtype
 
 	switch mtype {
 	case Counter:
-		rValue, err := strconv.ParseInt(value, 10, 64)
+		rValue, err := strconv.ParseInt(value, base, bitSize)
 		if err != nil {
 			return Metrics{}, err
 		}
+
 		req.Delta = &rValue
 		if key != "" {
 			req.Hash = hasher.HashHMAC(fmt.Sprintf("%s:counter:%d", name, rValue), key)
 		}
 	case Gauge:
-		rValue, err := strconv.ParseFloat(value, 64)
+		rValue, err := strconv.ParseFloat(value, bitSize)
 		if err != nil {
 			return Metrics{}, err
 		}
+
 		req.Value = &rValue
 		if key != "" {
 			req.Hash = hasher.HashHMAC(fmt.Sprintf("%s:gauge:%f", name, rValue), key)
 		}
 	}
+
 	return req, nil
 }
 
+// Send batch of Metrics by POST-req with JSON-body.
 func (s *Sender) SendMetricJSONBatch(metrics map[string]map[string]string, key string) error {
 	s.URL.Path = "updates/"
 
@@ -128,6 +159,7 @@ func (s *Sender) SendMetricJSONBatch(metrics map[string]map[string]string, key s
 			if err != nil {
 				return err
 			}
+
 			batchReq = append(batchReq, req)
 		}
 	}
@@ -141,11 +173,15 @@ func (s *Sender) SendMetricJSONBatch(metrics map[string]map[string]string, key s
 	if err != nil {
 		return err
 	}
+
 	request.Header.Set("Content-Type", "application/json")
+
 	res, err := s.Client.Do(request)
 	if err != nil {
 		return err
 	}
+
 	res.Body.Close()
+
 	return nil
 }

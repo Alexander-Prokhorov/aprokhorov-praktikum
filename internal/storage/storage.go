@@ -2,8 +2,10 @@ package storage
 
 import "context"
 
-type Gauge float64
-type Counter int64
+type (
+	Gauge   float64
+	Counter int64
+)
 
 type Storage interface {
 	Reader
@@ -13,12 +15,12 @@ type Storage interface {
 }
 
 type Reader interface {
-	Read(valueType string, metric string) (interface{}, error)
-	ReadAll() (map[string]map[string]string, error)
+	Read(ctx context.Context, valueType string, metric string) (interface{}, error)
+	ReadAll(ctx context.Context) (map[string]map[string]string, error)
 }
 
 type Writer interface {
-	Write(metric string, value interface{}) error
+	Write(ctx context.Context, metric string, value interface{}) error
 }
 
 type Pinger interface {

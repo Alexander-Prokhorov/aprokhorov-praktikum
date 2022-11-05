@@ -7,32 +7,37 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
+// Agent Config Data.
 type Config struct {
 	MemStatMetrics []string `json:"-"`
-	Address        string   `env:"ADDRESS"`         //envDefault:"127.0.0.1:8080"`
-	PollInterval   string   `env:"POLL_INTERVAL"`   //envDefault:"2s"`
-	SendInterval   string   `env:"REPORT_INTERVAL"` //envDefault:"10s"`
-	Key            string   `env:"KEY"`             //envDefault:""`
+	Address        string   `env:"ADDRESS"`         // envDefault:"127.0.0.1:8080"`
+	PollInterval   string   `env:"POLL_INTERVAL"`   // envDefault:"2s"`
+	SendInterval   string   `env:"REPORT_INTERVAL"` // envDefault:"10s"`
+	Key            string   `env:"KEY"`             // envDefault:""`
 	Batch          bool     `json:"-" env:"-"`
 	LogLevel       int      `json:"-" env:"LOG_LEVEL"`
 }
 
+// Fill up Agent Config from environment variables.
 func (c *Config) EnvInit() {
-	err := env.Parse(c)
-	if err != nil {
+	if err := env.Parse(c); err != nil {
 		log.Fatal(err)
 	}
 }
 
+// Return string representation of Agent Config Data.
+// For Stringer interface, used in logging.
 func (c Config) String() string {
-	//cString, err := json.MarshalIndent(c, "", "    ")
+	// cString, err := json.MarshalIndent(c, "", "    ")
 	cString, err := json.Marshal(c)
 	if err != nil {
 		return ""
 	}
+
 	return string(cString)
 }
 
+// Init empty Agent Config.
 func NewAgentConfig() *Config {
 	return &Config{
 		MemStatMetrics: sliceMemStat(),

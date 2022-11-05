@@ -1,31 +1,38 @@
 package handlers_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"aprokhorov-praktikum/cmd/server/handlers"
-	"aprokhorov-praktikum/internal/storage"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
+
+	"aprokhorov-praktikum/internal/server/handlers"
+	"aprokhorov-praktikum/internal/storage"
 )
 
 func TestGet(t *testing.T) {
+	t.Parallel()
+
 	type values struct {
 		name  string
 		value interface{}
 	}
+
 	type args struct {
 		s      storage.Storage
 		url    string
 		values []values
 	}
+
 	type want struct {
 		code     int
 		response string
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -58,12 +65,13 @@ func TestGet(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-
+			t.Parallel()
 			// Заполним базу тестовыми данными
 			tt.args.s = storage.NewStorageMem()
 			for _, value := range tt.args.values {
-				err := tt.args.s.Write(value.name, value.value)
+				err := tt.args.s.Write(context.Background(), value.name, value.value)
 				if err != nil {
 					t.Error(err)
 				}
@@ -84,4 +92,25 @@ func TestGet(t *testing.T) {
 			assert.Equal(t, tt.want.response, w.Body.String())
 		})
 	}
+}
+
+func ExampleGet() {
+	// How to use Get handler
+	// Init any storage that compatible with storage.Storage interface{}
+	database := storage.NewStorageMem()
+
+	// Init chi-router
+	r := chi.NewRouter()
+
+	// Add Get handler endpoint
+	r.Post("/", handlers.Get(database))
+
+	// Init and Run Server
+	const defaultReadHeaderTimeout = time.Second * 5
+	server := &http.Server{
+		Addr:              ":8080",
+		Handler:           r,
+		ReadHeaderTimeout: defaultReadHeaderTimeout,
+	}
+	_ = server.ListenAndServe()
 }

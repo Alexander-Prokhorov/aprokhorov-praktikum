@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// Handler for GET metric value by url-encoded input.
 func Get(s storage.Reader) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
@@ -18,12 +19,13 @@ func Get(s storage.Reader) http.HandlerFunc {
 		req.MType = chi.URLParam(r, "metricType")
 		req.ID = chi.URLParam(r, "metricName")
 
-		err := readHelper(w, s, &req, "")
+		err := readHelper(r.Context(), w, s, &req, "")
 		if err != nil {
 			return
 		}
 
 		var respond interface{}
+
 		switch req.MType {
 		case Counter:
 			respond = *req.Delta
@@ -38,6 +40,7 @@ func Get(s storage.Reader) http.HandlerFunc {
 	}
 }
 
+// Handler for GET all metric values by URL-encoded input.
 func GetAll(s storage.Reader) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decorator := func(text string, htmlTag string) string {
@@ -46,11 +49,14 @@ func GetAll(s storage.Reader) http.HandlerFunc {
 
 		var htmlPage string
 		htmlPage += decorator("All Metrics", "h1")
-		metrics, err := s.ReadAll()
+
+		metrics, err := s.ReadAll(r.Context())
 		if err != nil {
 			http.Error(w, fmt.Sprintf("internal server error: %s", err), http.StatusInternalServerError)
+
 			return
 		}
+
 		for metricType, metrics := range metrics {
 			htmlPage += decorator(metricType, "h2")
 			for metricName, MetricValue := range metrics {
@@ -64,6 +70,5 @@ func GetAll(s storage.Reader) http.HandlerFunc {
 		if err != nil {
 			panic(err)
 		}
-		//json.NewEncoder(w).Encode(s.ReadAll())
 	}
 }

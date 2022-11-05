@@ -1,53 +1,64 @@
 package poller
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"math/rand"
 	"runtime"
 	"time"
 
-	"aprokhorov-praktikum/internal/storage"
-
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
+
+	"aprokhorov-praktikum/internal/storage"
 )
 
+// Poller Data.
 type Poller struct {
 	Storage storage.Storage
 }
 
-func NewAgentPoller() *Poller {
+// Init of Poller with new MemStorage.
+func NewAgentPoller(ctx context.Context) *Poller {
 	var p Poller
 	p.Storage = storage.NewStorageMem()
-	err := p.Storage.Write("PollCount", storage.Counter(0))
+
+	err := p.Storage.Write(ctx, "PollCount", storage.Counter(0))
 	if err != nil {
 		panic("Can't init storage")
 	}
+
 	return &p
 }
 
-func (p *Poller) PollRandomMetric() error {
+// Generate and Save random metric.
+func (p *Poller) PollRandomMetric(ctx context.Context) error {
 	rand.Seed(time.Now().UnixNano())
-	err := p.Storage.Write("RandomValue", storage.Gauge(rand.Float64()))
+
+	err := p.Storage.Write(ctx, "RandomValue", storage.Gauge(rand.Float64()))
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func (p *Poller) PollMemStats(lookupMemStat []string) error {
-
+// Store Current MemStat Metrics in Poller Storage.
+func (p *Poller) PollMemStats(ctx context.Context, lookupMemStat []string) error {
 	// Собираем метрики пакетом runtime
 	var metricValue runtime.MemStats
+
 	runtime.ReadMemStats(&metricValue)
 
 	// Переводим struct в map через json (костыль?? но проще чем reflect)
 	var mapInterface map[string]interface{}
+
 	jsonMemStats, err := json.Marshal(metricValue)
 	if err != nil {
 		return err
 	}
+
 	err = json.Unmarshal(jsonMemStats, &mapInterface)
 	if err != nil {
 		return err
@@ -60,10 +71,11 @@ func (p *Poller) PollMemStats(lookupMemStat []string) error {
 		if !ok {
 			continue
 		}
+
 		switch data := targetMetric.(type) {
 		case int64:
 		case float64:
-			err := p.Storage.Write(metric, storage.Gauge(data))
+			err = p.Storage.Write(ctx, metric, storage.Gauge(data))
 			if err != nil {
 				return err
 			}
@@ -71,23 +83,27 @@ func (p *Poller) PollMemStats(lookupMemStat []string) error {
 	}
 
 	// Увеличим счетчик
-	value, err := p.Storage.Read("counter", "PollCount")
+	value, err := p.Storage.Read(ctx, "counter", "PollCount")
 	if err != nil {
 		return err
 	}
+
 	counter, ok := value.(storage.Counter)
 	if !ok {
 		return errors.New("can't update counter, it's not a counter")
 	}
 	counter++
-	err = p.Storage.Write("PollCount", counter)
+
+	err = p.Storage.Write(ctx, "PollCount", counter)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func (p *Poller) PollPsUtil() error {
+// Store current PsUtil Metrics in Poller storage.
+func (p *Poller) PollPsUtil(ctx context.Context) error {
 	memory, err := mem.VirtualMemory()
 	if err != nil {
 		return err
@@ -97,6 +113,7 @@ func (p *Poller) PollPsUtil() error {
 	if err != nil {
 		return err
 	}
+
 	cpuData := cpuSlice[0]
 
 	data := map[string]storage.Gauge{
@@ -106,10 +123,11 @@ func (p *Poller) PollPsUtil() error {
 	}
 
 	for name, value := range data {
-		err = p.Storage.Write(name, value)
+		err = p.Storage.Write(ctx, name, value)
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }

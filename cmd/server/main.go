@@ -1,25 +1,32 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"aprokhorov-praktikum/cmd/server/config"
-	"aprokhorov-praktikum/cmd/server/files"
-	"aprokhorov-praktikum/cmd/server/handlers"
-	"aprokhorov-praktikum/internal/logger"
-	"aprokhorov-praktikum/internal/storage"
-
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
+
+	"aprokhorov-praktikum/internal/logger"
+	"aprokhorov-praktikum/internal/server/config"
+	"aprokhorov-praktikum/internal/server/files"
+	"aprokhorov-praktikum/internal/server/handlers"
+	"aprokhorov-praktikum/internal/storage"
 )
 
 func main() {
+	const (
+		defaultReadHeaderTimeout = time.Second * 5
+	)
+
 	conf := config.NewServerConfig()
 	// Init Flags
 	flag.StringVar(&conf.Address, "a", "127.0.0.1:8080", "An ip address for server run")
@@ -34,6 +41,8 @@ func main() {
 	// Init Config from Env
 	conf.EnvInit()
 
+	ctx := context.Background()
+
 	// Init Logger
 	logger, err := logger.NewLogger("server.log", conf.LogLevel)
 	if err != nil {
@@ -44,20 +53,24 @@ func main() {
 
 	// Init Storage
 	var database storage.Storage
-	if conf.DatabaseDSN == "" {
+
+	switch conf.DatabaseDSN {
+	case "":
 		database = storage.NewStorageMem()
 		if conf.Restore {
 			if err := files.LoadData(conf.StoreFile, database); err != nil {
 				logger.Fatal(fmt.Sprintf("can't load data from file: %s", err.Error()))
 			}
 		}
-	} else {
+	default:
 		var err error
-		database, err = storage.NewDatabaseConnect(conf.DatabaseDSN)
+
+		database, err = storage.NewDatabaseConnect(ctx, conf.DatabaseDSN)
 		if err != nil {
 			logger.Fatal(fmt.Sprintf("can't connect to database: %s", err.Error()))
 		}
 	}
+
 	defer database.Close()
 
 	// Init chi Router and setup Handlers
@@ -65,7 +78,7 @@ func main() {
 
 	r.Use(handlers.Unpack)
 	r.Use(handlers.Pack)
-
+	r.Mount("/debug", middleware.Profiler())
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAll(database))
 		r.Get("/ping", handlers.Ping(database))
@@ -93,14 +106,14 @@ func main() {
 		if err != nil {
 			logger.Fatal(fmt.Sprintf("can't parse store inverval: %s", err.Error()))
 		}
+
 		tickerSave := time.NewTicker(storeInterval)
+
 		go func() {
 			for {
 				<-tickerSave.C
-				err := files.SaveData(conf.StoreFile, database)
-				if err != nil {
-					logger.Fatal(fmt.Sprintf("can't save data to file: %s", err.Error()))
-				}
+
+				_ = files.SaveData(conf.StoreFile, database)
 			}
 		}()
 
@@ -117,8 +130,9 @@ func main() {
 	}
 	// Init Server
 	server := &http.Server{
-		Addr:    conf.Address,
-		Handler: r,
+		Addr:              conf.Address,
+		ReadHeaderTimeout: defaultReadHeaderTimeout,
+		Handler:           r,
 	}
 
 	go func() {
@@ -127,5 +141,4 @@ func main() {
 
 	// Handle os.Exit
 	<-done
-
 }

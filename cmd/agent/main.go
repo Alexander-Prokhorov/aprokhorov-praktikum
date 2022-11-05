@@ -11,12 +11,12 @@ import (
 	"syscall"
 	"time"
 
-	"aprokhorov-praktikum/cmd/agent/config"
-	"aprokhorov-praktikum/cmd/agent/poller"
-	"aprokhorov-praktikum/cmd/agent/sender"
-	"aprokhorov-praktikum/internal/logger"
-
 	"go.uber.org/zap"
+
+	"aprokhorov-praktikum/internal/agent/config"
+	"aprokhorov-praktikum/internal/agent/poller"
+	"aprokhorov-praktikum/internal/agent/sender"
+	"aprokhorov-praktikum/internal/logger"
 )
 
 func errHandle(text string, err error, logger *zap.Logger) {
@@ -47,11 +47,13 @@ func main() {
 	conf.EnvInit()
 	logger.Info(conf.String())
 
+	ctx := context.Background()
+
 	// Init Sender
 	send := sender.NewAgentSender(conf.Address)
 
 	// Init Poller
-	NewMetrics := poller.NewAgentPoller()
+	NewMetrics := poller.NewAgentPoller(ctx)
 
 	// Poll and Send tickers
 	pollInterval, err := time.ParseDuration(conf.PollInterval)
@@ -74,59 +76,85 @@ func main() {
 
 	// Make Goroutines
 	wg.Add(1)
-	go func(ctx context.Context, signal <-chan time.Time, sync chan<- struct{}, wgr *sync.WaitGroup, metrics *poller.Poller, metricList []string, log *zap.Logger) {
+
+	go func(
+		ctx context.Context,
+		signal <-chan time.Time,
+		sync chan<- struct{},
+		wgr *sync.WaitGroup,
+		metrics *poller.Poller,
+		metricList []string,
+		log *zap.Logger,
+	) {
 		for {
 			select {
 			case <-signal:
 				sync <- struct{}{}
-				err := metrics.PollMemStats(metricList)
+
+				err := metrics.PollMemStats(ctx, metricList)
 				if err != nil {
 					log.Error("Poller MemStat error: " + err.Error())
 				}
-				err = metrics.PollRandomMetric()
+
+				err = metrics.PollRandomMetric(ctx)
 				if err != nil {
 					log.Error("Poller MemStat error: " + err.Error())
 				}
-				counter, err := metrics.Storage.Read("counter", "PollCount")
+
+				counter, err := metrics.Storage.Read(ctx, "counter", "PollCount")
 				if err != nil {
 					log.Error("Poller MemStat error: " + err.Error())
 				}
+
 				log.Info(fmt.Sprintf("Poll MemStat Count: %v", counter))
 			case <-ctx.Done():
 				log.Info("Close Poller MemStat Goroutine")
 				wgr.Done()
+
 				return
 			}
 		}
 	}(ctxMain, tickerPoll.C, syncChan, wg, NewMetrics, conf.MemStatMetrics, logger)
 
 	wg.Add(1)
+
 	go func(ctx context.Context, signal <-chan struct{}, wgr *sync.WaitGroup, metrics *poller.Poller, log *zap.Logger) {
 		for {
 			select {
 			case <-signal:
-				err := metrics.PollPsUtil()
+				err := metrics.PollPsUtil(ctx)
 				if err != nil {
 					log.Error("Poller PSUtil error: " + err.Error())
 				}
+
 				log.Info("Poll PSUtil Done")
 			case <-ctx.Done():
 				log.Info("Close Poller PSUtil Goroutine")
 				wgr.Done()
+
 				return
 			}
 		}
-
 	}(ctxMain, syncChan, wg, NewMetrics, logger)
 
 	wg.Add(1)
-	go func(ctx context.Context, signal <-chan time.Time, wgr *sync.WaitGroup, s *sender.Sender, metrics *poller.Poller, batchStatus bool, key string, log *zap.Logger) {
+
+	go func(
+		ctx context.Context,
+		signal <-chan time.Time,
+		wgr *sync.WaitGroup,
+		s *sender.Sender,
+		metrics *poller.Poller,
+		batchStatus bool,
+		key string,
+		log *zap.Logger,
+	) {
 		for {
 			select {
 			case <-signal:
 				log.Info("Send Data to Server")
 
-				metricsData, err := metrics.Storage.ReadAll()
+				metricsData, err := metrics.Storage.ReadAll(ctx)
 				if err != nil {
 					log.Error("Can't read mertics from storage: " + err.Error())
 				}
@@ -155,15 +183,15 @@ func main() {
 			case <-ctx.Done():
 				log.Info("Close Sender Goroutine")
 				wgr.Done()
+
 				return
 			}
 		}
-
 	}(ctxMain, tickerSend.C, wg, send, NewMetrics, conf.Batch, conf.Key, logger)
 
 	// Handle system calls
 	<-done
 	cancel()
 	wg.Wait()
-	logger.Info("Gracefull Close Finished")
+	logger.Info("Graceful Close Finished")
 }
