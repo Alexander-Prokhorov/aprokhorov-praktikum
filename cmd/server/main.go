@@ -22,7 +22,20 @@ import (
 	"aprokhorov-praktikum/internal/storage"
 )
 
+// go run -ldflags "-X main.buildVersion=1.1.1 \
+// -X 'main.buildDate=$(date +'%Y/%m/%d')' \
+// -X 'main.buildCommit=$(git log -1 --pretty=%B | cat)'" \
+// main.go
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
+	// send to stdout buildVars
+	fmt.Fprintf(os.Stdout, "Build version: %s\nBuild date: %s\nBuild commit: %s\n", buildVersion, buildDate, buildCommit)
+
 	const (
 		defaultReadHeaderTimeout = time.Second * 5
 	)
