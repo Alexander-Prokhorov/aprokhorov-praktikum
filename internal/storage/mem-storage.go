@@ -18,7 +18,7 @@ type MemStorage struct {
 }
 
 type Metrics struct {
-	Gauge   map[string]Gauge   `json:"mauge"`
+	Gauge   map[string]Gauge   `json:"gauge"`
 	Counter map[string]Counter `json:"counter"`
 }
 

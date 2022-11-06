@@ -1,7 +1,6 @@
 package files_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +25,7 @@ func TestSaveData(t *testing.T) {
 		{
 			name: "Test for writing data to file",
 			args: args{
-				fileName: "test.txt",
+				fileName: "testdata/test.txt",
 				s:        storage.NewStorageMem(),
 			},
 			wantErr: false,
@@ -40,8 +39,6 @@ func TestSaveData(t *testing.T) {
 			if err := files.SaveData(tt.args.fileName, tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("SaveData() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			err := os.Remove(tt.args.fileName)
-			panic(err)
 		})
 	}
 }
@@ -62,7 +59,7 @@ func TestLoadData(t *testing.T) {
 		{
 			name: "Test for loading data from file",
 			args: args{
-				fileName: "test.txt",
+				fileName: "testdata/test.txt",
 				s:        storage.NewStorageMem(),
 			},
 			wantErr: false,
@@ -78,8 +75,6 @@ func TestLoadData(t *testing.T) {
 			if err := files.LoadData(tt.args.fileName, tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("LoadData() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			err := os.Remove(tt.args.fileName)
-			panic(err)
 		})
 	}
 }
