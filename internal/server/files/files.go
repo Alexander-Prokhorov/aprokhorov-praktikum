@@ -15,7 +15,9 @@ func SaveData(fileName string, s storage.Storage) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		err = file.Close()
+	}()
 
 	enc := json.NewEncoder(file)
 	err = enc.Encode(s)
@@ -24,19 +26,24 @@ func SaveData(fileName string, s storage.Storage) error {
 		return err
 	}
 
-	return nil
+	return err
 }
 
 // Load data-dump from local file.
 func LoadData(fileName string, s storage.Storage) error {
 	file, err := os.OpenFile(fileName, os.O_RDONLY, defaultPerm)
-	if err == nil {
-		defer file.Close()
-
-		if err := json.NewDecoder(file).Decode(s); err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
 
-	return nil
+	defer func() {
+		err = file.Close()
+	}()
+
+	err = json.NewDecoder(file).Decode(s)
+	if err != nil {
+		return err
+	}
+
+	return err
 }

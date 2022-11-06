@@ -40,7 +40,8 @@ func TestSaveData(t *testing.T) {
 			if err := files.SaveData(tt.args.fileName, tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("SaveData() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			os.Remove(tt.args.fileName)
+			err := os.Remove(tt.args.fileName)
+			panic(err)
 		})
 	}
 }
@@ -72,12 +73,13 @@ func TestLoadData(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			err := files.SaveData(tt.args.fileName, tt.args.s)
-			assert.NoError(t, err, "SaveData to File Error")
+			er := files.SaveData(tt.args.fileName, tt.args.s)
+			assert.NoError(t, er, "SaveData to File Error")
 			if err := files.LoadData(tt.args.fileName, tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("LoadData() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			os.Remove(tt.args.fileName)
+			err := os.Remove(tt.args.fileName)
+			panic(err)
 		})
 	}
 }

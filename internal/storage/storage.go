@@ -27,5 +27,5 @@ type Pinger interface {
 	Ping(context.Context) error
 }
 type Closer interface {
-	Close()
+	Close() error
 }

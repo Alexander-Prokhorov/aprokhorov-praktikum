@@ -121,5 +121,6 @@ func (ms MemStorage) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (ms MemStorage) Close() {
+func (ms MemStorage) Close() error {
+	return nil
 }

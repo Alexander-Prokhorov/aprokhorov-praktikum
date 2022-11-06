@@ -119,7 +119,10 @@ func TestPost(t *testing.T) {
 			cr.Post("/update/{metricType}/{metricName}/{metricValue}", handlers.Post(tt.args.s))
 			cr.ServeHTTP(w, r)
 			res := w.Result()
-			defer res.Body.Close()
+			defer func() {
+				err := res.Body.Close()
+				assert.NoError(t, err)
+			}()
 
 			assert.Equal(t, tt.want.code, res.StatusCode)
 			databaseValue, err := tt.args.s.Read(context.Background(), tt.args.url.mtype, tt.args.url.name)

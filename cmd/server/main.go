@@ -58,20 +58,21 @@ func main() {
 	case "":
 		database = storage.NewStorageMem()
 		if conf.Restore {
-			if err := files.LoadData(conf.StoreFile, database); err != nil {
+			err = files.LoadData(conf.StoreFile, database)
+			if err != nil {
 				logger.Fatal(fmt.Sprintf("can't load data from file: %s", err.Error()))
 			}
 		}
 	default:
-		var err error
-
 		database, err = storage.NewDatabaseConnect(ctx, conf.DatabaseDSN)
 		if err != nil {
 			logger.Fatal(fmt.Sprintf("can't connect to database: %s", err.Error()))
 		}
 	}
 
-	defer database.Close()
+	defer func() {
+		err = database.Close()
+	}()
 
 	// Init chi Router and setup Handlers
 	r := chi.NewRouter()

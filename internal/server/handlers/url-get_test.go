@@ -86,7 +86,10 @@ func TestGet(t *testing.T) {
 			cr.Get("/value/{metricType}/{metricName}", handlers.Get(tt.args.s))
 			cr.ServeHTTP(w, r)
 			res := w.Result()
-			defer res.Body.Close()
+			defer func() {
+				err := res.Body.Close()
+				assert.NoError(t, err)
+			}()
 
 			assert.Equal(t, tt.want.code, res.StatusCode)
 			assert.Equal(t, tt.want.response, w.Body.String())

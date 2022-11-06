@@ -57,7 +57,8 @@ func TestSender_SendMetricURL(t *testing.T) {
 			testServer := httptest.NewServer(
 				http.HandlerFunc(
 					func(w http.ResponseWriter, r *http.Request) {
-						fmt.Fprintf(w, "This is Test HTTPServer")
+						_, err := fmt.Fprintf(w, "This is Test HTTPServer")
+						assert.NoError(t, err)
 					}))
 			defer testServer.Close()
 
@@ -119,7 +120,8 @@ func TestSender_SendMetricJSON(t *testing.T) {
 			testServer := httptest.NewServer(
 				http.HandlerFunc(
 					func(w http.ResponseWriter, r *http.Request) {
-						fmt.Fprintf(w, "This is Test HTTPServer")
+						_, err := fmt.Fprintf(w, "This is Test HTTPServer")
+						assert.NoError(t, err)
 					}))
 			defer testServer.Close()
 

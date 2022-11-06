@@ -241,3 +241,7 @@ issues:
       linters:
         - gosec
       text: "G404"
+    - path: cmd/staticlint/staticlint.go
+      linters:
+        - nestif
+      text: "*complex nested blocks.*"
