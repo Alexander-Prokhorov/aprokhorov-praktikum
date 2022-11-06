@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"aprokhorov-praktikum/internal/storage"
-
 	"github.com/go-chi/chi"
+
+	"aprokhorov-praktikum/internal/storage"
 )
 
 // Handler for GET metric value by url-encoded input.
