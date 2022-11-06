@@ -11,9 +11,11 @@ require (
 	github.com/stretchr/testify v1.7.5
 	go.uber.org/zap v1.21.0
 	golang.org/x/tools v0.2.0
+	honnef.co/go/tools v0.0.1-2019.2.3
 )
 
 require (
+	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect

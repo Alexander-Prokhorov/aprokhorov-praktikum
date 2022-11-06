@@ -37,7 +37,15 @@ func errHandle(text string, err error, logger *zap.Logger) {
 
 func main() {
 	// send to stdout buildVars
-	fmt.Fprintf(os.Stdout, "Build version: %s\nBuild date: %s\nBuild commit: %s\n", buildVersion, buildDate, buildCommit)
+	if _, err := fmt.Fprintf(
+		os.Stdout,
+		"Build version: %s\nBuild date: %s\nBuild commit: %s\n",
+		buildVersion,
+		buildDate,
+		buildCommit,
+	); err != nil {
+		log.Fatal(err)
+	}
 
 	// Init Config
 	conf := config.NewAgentConfig()

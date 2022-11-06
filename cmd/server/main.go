@@ -34,7 +34,15 @@ var (
 
 func main() {
 	// send to stdout buildVars
-	fmt.Fprintf(os.Stdout, "Build version: %s\nBuild date: %s\nBuild commit: %s\n", buildVersion, buildDate, buildCommit)
+	if _, err := fmt.Fprintf(
+		os.Stdout,
+		"Build version: %s\nBuild date: %s\nBuild commit: %s\n",
+		buildVersion,
+		buildDate,
+		buildCommit,
+	); err != nil {
+		log.Fatal(err)
+	}
 
 	const (
 		defaultReadHeaderTimeout = time.Second * 5

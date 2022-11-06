@@ -2,6 +2,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/kisielk/errcheck/errcheck"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
@@ -21,6 +23,7 @@ import (
 	"golang.org/x/tools/go/analysis/passes/unreachable"
 	"golang.org/x/tools/go/analysis/passes/unusedresult"
 	"golang.org/x/tools/go/analysis/passes/usesgenerics"
+	"honnef.co/go/tools/staticcheck"
 
 	"aprokhorov-praktikum/cmd/staticlint/osexit"
 )
@@ -63,14 +66,13 @@ func main() {
 		usesgenerics.Analyzer,
 	}
 
-	// Ошибки при работе, пришлось пока выключить
-	/*
-		for _, v := range staticcheck.Analyzers {
-			if strings.HasPrefix(v.Name, "SA") || strings.HasPrefix(v.Name, "ST") {
-				totalchecks = append(totalchecks, v)
-			}
+	// Ошибки при работе, пришлось пока выключить SA-проверки
+
+	for _, v := range staticcheck.Analyzers {
+		if strings.HasPrefix(v.Name, "ST") { // || strings.HasPrefix(v.Name, "SA") {
+			totalchecks = append(totalchecks, v)
 		}
-	*/
+	}
 
 	totalchecks = append(totalchecks, errcheck.Analyzer)
 
