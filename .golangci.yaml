@@ -233,9 +233,8 @@ issues:
   exclude-rules:
     - linters:
         - gofumpt
-      text: "File is not"
-    - linters:
         - gofmt
+        - goimports
       text: "File is not"
     - linters:
         - gosec
