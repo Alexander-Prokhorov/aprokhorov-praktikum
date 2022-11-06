@@ -144,7 +144,7 @@ linters:
     - gocyclo
 #    - godot
     - godox
-#    - gofmt # On why gofmt when goimports is enabled - https://github.com/golang/go/issues/21476
+    - gofmt # On why gofmt when goimports is enabled - https://github.com/golang/go/issues/21476
     - gofumpt
     - goheader
     - goimports
@@ -233,6 +233,9 @@ issues:
   exclude-rules:
     - linters:
         - gofumpt
+      text: "File is not"
+    - linters:
+        - gofmt
       text: "File is not"
     - linters:
         - gosec
