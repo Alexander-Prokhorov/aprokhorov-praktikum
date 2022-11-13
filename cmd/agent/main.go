@@ -19,6 +19,16 @@ import (
 	"aprokhorov-praktikum/internal/logger"
 )
 
+// go run -ldflags "-X main.buildVersion=1.1.1 \
+// -X 'main.buildDate=$(date +'%Y/%m/%d')' \
+// -X 'main.buildCommit=$(git log -1 --pretty=%B | cat)'" \
+// main.go
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func errHandle(text string, err error, logger *zap.Logger) {
 	if err != nil {
 		logger.Error(text + err.Error())
@@ -26,6 +36,17 @@ func errHandle(text string, err error, logger *zap.Logger) {
 }
 
 func main() {
+	// send to stdout buildVars
+	if _, err := fmt.Fprintf(
+		os.Stdout,
+		"Build version: %s\nBuild date: %s\nBuild commit: %s\n",
+		buildVersion,
+		buildDate,
+		buildCommit,
+	); err != nil {
+		log.Fatal(err)
+	}
+
 	// Init Config
 	conf := config.NewAgentConfig()
 

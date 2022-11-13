@@ -1,7 +1,6 @@
 package files_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +25,7 @@ func TestSaveData(t *testing.T) {
 		{
 			name: "Test for writing data to file",
 			args: args{
-				fileName: "test.txt",
+				fileName: "testdata/test.txt",
 				s:        storage.NewStorageMem(),
 			},
 			wantErr: false,
@@ -40,7 +39,6 @@ func TestSaveData(t *testing.T) {
 			if err := files.SaveData(tt.args.fileName, tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("SaveData() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			os.Remove(tt.args.fileName)
 		})
 	}
 }
@@ -61,7 +59,7 @@ func TestLoadData(t *testing.T) {
 		{
 			name: "Test for loading data from file",
 			args: args{
-				fileName: "test.txt",
+				fileName: "testdata/test.txt",
 				s:        storage.NewStorageMem(),
 			},
 			wantErr: false,
@@ -72,12 +70,11 @@ func TestLoadData(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			err := files.SaveData(tt.args.fileName, tt.args.s)
-			assert.NoError(t, err, "SaveData to File Error")
+			er := files.SaveData(tt.args.fileName, tt.args.s)
+			assert.NoError(t, er, "SaveData to File Error")
 			if err := files.LoadData(tt.args.fileName, tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("LoadData() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			os.Remove(tt.args.fileName)
 		})
 	}
 }

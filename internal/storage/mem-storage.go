@@ -18,7 +18,7 @@ type MemStorage struct {
 }
 
 type Metrics struct {
-	Gauge   map[string]Gauge   `json:"mauge"`
+	Gauge   map[string]Gauge   `json:"gauge"`
 	Counter map[string]Counter `json:"counter"`
 }
 
@@ -121,5 +121,6 @@ func (ms MemStorage) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (ms MemStorage) Close() {
+func (ms MemStorage) Close() error {
+	return nil
 }

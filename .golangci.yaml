@@ -233,6 +233,8 @@ issues:
   exclude-rules:
     - linters:
         - gofumpt
+        - gofmt
+        - goimports
       text: "File is not"
     - linters:
         - gosec
@@ -241,3 +243,6 @@ issues:
       linters:
         - gosec
       text: "G404"
+    - path: cmd/staticlint/osexit/exitchecker.go
+      linters:
+        - nestif

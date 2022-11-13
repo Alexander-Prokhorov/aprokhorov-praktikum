@@ -114,7 +114,9 @@ func (pgs Pgs) ReadAll(ctx context.Context) (map[string]map[string]string, error
 	if rows.Err() != nil {
 		return ret, rows.Err()
 	}
-	defer rows.Close()
+	defer func() {
+		err = rows.Close()
+	}()
 
 	for rows.Next() {
 		err = rows.Scan(&name, &delta)
@@ -134,10 +136,13 @@ func (pgs Pgs) ReadAll(ctx context.Context) (map[string]map[string]string, error
 		return ret, err
 	}
 
-	if rows.Err() != nil {
-		return ret, rows.Err()
+	err = rows.Err()
+	if err != nil {
+		return ret, err
 	}
-	defer rows.Close()
+	defer func() {
+		err = rows.Close()
+	}()
 
 	for rows.Next() {
 		err = rows.Scan(&name, &value)
@@ -148,7 +153,7 @@ func (pgs Pgs) ReadAll(ctx context.Context) (map[string]map[string]string, error
 		ret["gauge"][name] = strconv.FormatFloat(float64(value), 'f', -1, bitSize)
 	}
 
-	return ret, nil
+	return ret, err
 }
 
 func (pgs Pgs) Write(ctx context.Context, metricName string, value interface{}) error {
@@ -214,8 +219,8 @@ func (pgs *Pgs) safeGaugeRead(ctx context.Context, metricName string) (Gauge, er
 	return Gauge(value.Value), nil
 }
 
-func (pgs Pgs) Close() {
-	pgs.DB.Close()
+func (pgs Pgs) Close() error {
+	return pgs.DB.Close()
 }
 
 func (pgs Pgs) Flush(ctx context.Context) error {

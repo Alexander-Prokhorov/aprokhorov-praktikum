@@ -22,7 +22,28 @@ import (
 	"aprokhorov-praktikum/internal/storage"
 )
 
+// go run -ldflags "-X main.buildVersion=1.1.1 \
+// -X 'main.buildDate=$(date +'%Y/%m/%d')' \
+// -X 'main.buildCommit=$(git log -1 --pretty=%B | cat)'" \
+// main.go
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
+	// send to stdout buildVars
+	if _, err := fmt.Fprintf(
+		os.Stdout,
+		"Build version: %s\nBuild date: %s\nBuild commit: %s\n",
+		buildVersion,
+		buildDate,
+		buildCommit,
+	); err != nil {
+		log.Fatal(err)
+	}
+
 	const (
 		defaultReadHeaderTimeout = time.Second * 5
 	)
@@ -58,20 +79,21 @@ func main() {
 	case "":
 		database = storage.NewStorageMem()
 		if conf.Restore {
-			if err := files.LoadData(conf.StoreFile, database); err != nil {
+			err = files.LoadData(conf.StoreFile, database)
+			if err != nil {
 				logger.Fatal(fmt.Sprintf("can't load data from file: %s", err.Error()))
 			}
 		}
 	default:
-		var err error
-
 		database, err = storage.NewDatabaseConnect(ctx, conf.DatabaseDSN)
 		if err != nil {
 			logger.Fatal(fmt.Sprintf("can't connect to database: %s", err.Error()))
 		}
 	}
 
-	defer database.Close()
+	defer func() {
+		err = database.Close()
+	}()
 
 	// Init chi Router and setup Handlers
 	r := chi.NewRouter()

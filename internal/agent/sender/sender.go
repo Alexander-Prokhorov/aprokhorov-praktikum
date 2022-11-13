@@ -75,9 +75,7 @@ func (s *Sender) SendMetricURL(mtype string, name string, value string, key stri
 		return err
 	}
 
-	res.Body.Close()
-
-	return nil
+	return res.Body.Close()
 }
 
 // Send Metric by POST-req for Server JSON-body.
@@ -106,9 +104,7 @@ func (s *Sender) SendMetricJSON(mtype string, name string, value string, key str
 		return err
 	}
 
-	res.Body.Close()
-
-	return nil
+	return res.Body.Close()
 }
 
 func (s *Sender) helperSendMetricJSON(mtype string, name string, value string, key string) (Metrics, error) {
@@ -181,7 +177,5 @@ func (s *Sender) SendMetricJSONBatch(metrics map[string]map[string]string, key s
 		return err
 	}
 
-	res.Body.Close()
-
-	return nil
+	return res.Body.Close()
 }
