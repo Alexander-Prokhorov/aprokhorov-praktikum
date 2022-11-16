@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"aprokhorov-praktikum/internal/ccrypto"
 	"aprokhorov-praktikum/internal/hasher"
 )
 
@@ -50,13 +51,23 @@ func NewAgentSender(address string) *Sender {
 }
 
 // Send Metric to Server.
-func (s *Sender) SendMetric(mtype string, name string, value string, key string) error {
-	return s.SendMetricJSON(mtype, name, value, key)
+func (s *Sender) SendMetricSingle(
+	mtype string,
+	name string,
+	value string,
+	hashKey string,
+	pubKey *ccrypto.PublicKey,
+) error {
+	return s.SendMetricJSON(mtype, name, value, hashKey, pubKey)
 }
 
 // Send Batch of metrics to Server.
-func (s *Sender) SendMetricBatch(metrics map[string]map[string]string, key string) error {
-	return s.SendMetricJSONBatch(metrics, key)
+func (s *Sender) SendMetricBatch(
+	metrics map[string]map[string]string,
+	hashKey string,
+	pubKey *ccrypto.PublicKey,
+) error {
+	return s.SendMetricJSONBatch(metrics, hashKey, pubKey)
 }
 
 // Send Metrics by POST-req to Server url-encoded.
@@ -79,10 +90,16 @@ func (s *Sender) SendMetricURL(mtype string, name string, value string, key stri
 }
 
 // Send Metric by POST-req for Server JSON-body.
-func (s *Sender) SendMetricJSON(mtype string, name string, value string, key string) error {
+func (s *Sender) SendMetricJSON(
+	mtype string,
+	name string,
+	value string,
+	hashKey string,
+	pubKey *ccrypto.PublicKey,
+) error {
 	s.URL.Path = "update/"
 
-	req, err := s.helperSendMetricJSON(mtype, name, value, key)
+	req, err := s.helperSendMetricJSON(mtype, name, value, hashKey)
 	if err != nil {
 		return err
 	}
@@ -90,6 +107,13 @@ func (s *Sender) SendMetricJSON(mtype string, name string, value string, key str
 	jReq, err := json.Marshal(req)
 	if err != nil {
 		return err
+	}
+
+	if pubKey != nil {
+		jReq, err = pubKey.Encrypt(jReq)
+		if err != nil {
+			return err
+		}
 	}
 
 	request, err := http.NewRequest(http.MethodPost, s.URL.String(), bytes.NewBuffer(jReq))
@@ -144,14 +168,18 @@ func (s *Sender) helperSendMetricJSON(mtype string, name string, value string, k
 }
 
 // Send batch of Metrics by POST-req with JSON-body.
-func (s *Sender) SendMetricJSONBatch(metrics map[string]map[string]string, key string) error {
+func (s *Sender) SendMetricJSONBatch(
+	metrics map[string]map[string]string,
+	hashKey string,
+	pubKey *ccrypto.PublicKey,
+) error {
 	s.URL.Path = "updates/"
 
 	batchReq := make([]Metrics, 0)
 
 	for metricType, metric := range metrics {
 		for metricName, metricValue := range metric {
-			req, err := s.helperSendMetricJSON(metricType, metricName, metricValue, key)
+			req, err := s.helperSendMetricJSON(metricType, metricName, metricValue, hashKey)
 			if err != nil {
 				return err
 			}
@@ -163,6 +191,13 @@ func (s *Sender) SendMetricJSONBatch(metrics map[string]map[string]string, key s
 	jReq, err := json.Marshal(batchReq)
 	if err != nil {
 		return err
+	}
+
+	if pubKey != nil {
+		jReq, err = pubKey.Encrypt(jReq)
+		if err != nil {
+			return err
+		}
 	}
 
 	request, err := http.NewRequest(http.MethodPost, s.URL.String(), bytes.NewBuffer(jReq))

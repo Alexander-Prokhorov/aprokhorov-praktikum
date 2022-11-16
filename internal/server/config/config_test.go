@@ -70,7 +70,7 @@ func TestConfig_String(t *testing.T) {
 				LogLevel:      0,
 			},
 			want: "{\"Address\":\"\",\"StoreInterval\":\"\"," +
-				"\"StoreFile\":\"\",\"DatabaseDSN\":\"\",\"Restore\":false,\"Key\":\"\"}",
+				"\"StoreFile\":\"\",\"DatabaseDSN\":\"\",\"Restore\":false,\"Key\":\"\",\"CryptoKey\":\"\"}",
 		},
 	}
 

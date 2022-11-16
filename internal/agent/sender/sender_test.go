@@ -131,7 +131,13 @@ func TestSender_SendMetricJSON(t *testing.T) {
 			// Init Sender Client
 			s := sender.NewAgentSender(params[2])
 
-			if err := s.SendMetricJSON(tt.args.mtype, tt.args.name, tt.args.value, tt.args.key); (err != nil) != tt.wantErr {
+			if err := s.SendMetricJSON(
+				tt.args.mtype,
+				tt.args.name,
+				tt.args.value,
+				tt.args.key,
+				nil,
+			); (err != nil) != tt.wantErr {
 				t.Errorf("Sender.SendMetric() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

@@ -15,6 +15,7 @@ type Config struct {
 	DatabaseDSN   string `env:"DATABASE_DSN"`   // envDefault:"localhost:5432"`
 	Restore       bool   `env:"RESTORE"`        // envDefault:"true"`
 	Key           string `env:"KEY"`            // envDefault:""`
+	CryptoKey     string `env:"CRYPTO_KEY"`     // envDefault:""`
 	LogLevel      int    `json:"-" env:"LOG_LEVEL"`
 }
 

@@ -24,6 +24,10 @@ vendor/
 .idea
 .vscode
 
+# keys
+*.pub
+id_rsa
+
 # Custom User
 *.old
 *.log

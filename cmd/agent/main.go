@@ -16,6 +16,7 @@ import (
 	"aprokhorov-praktikum/internal/agent/config"
 	"aprokhorov-praktikum/internal/agent/poller"
 	"aprokhorov-praktikum/internal/agent/sender"
+	"aprokhorov-praktikum/internal/ccrypto"
 	"aprokhorov-praktikum/internal/logger"
 )
 
@@ -55,6 +56,7 @@ func main() {
 	flag.StringVar(&conf.SendInterval, "r", "10s", "Report Interval")
 	flag.StringVar(&conf.PollInterval, "p", "2s", "Poll Interval")
 	flag.StringVar(&conf.Key, "k", "", "Key for Hash")
+	flag.StringVar(&conf.CryptoKey, "crypto-key", "", "Path to id_rsa.pub file")
 	flag.IntVar(&conf.LogLevel, "l", 1, "Log Level, default:Warning")
 	flag.Parse()
 
@@ -75,6 +77,15 @@ func main() {
 
 	// Init Poller
 	NewMetrics := poller.NewAgentPoller(ctx)
+
+	// Get Public Key if set
+	var pubKey *ccrypto.PublicKey
+	if conf.CryptoKey != "" {
+		pubKey, err = ccrypto.NewPublicKeyFromFile(conf.CryptoKey)
+		if err != nil {
+			logger.Fatal("Failed to load Public Key: " + err.Error())
+		}
+	}
 
 	// Poll and Send tickers
 	pollInterval, err := time.ParseDuration(conf.PollInterval)
@@ -184,7 +195,7 @@ func main() {
 				switch batchStatus {
 				case true:
 					go func() {
-						err = s.SendMetricBatch(metricsData, key)
+						err = s.SendMetricBatch(metricsData, key, pubKey)
 						if err != nil {
 							log.Error("Sender Batch: " + err.Error())
 						}
@@ -193,7 +204,7 @@ func main() {
 					for metricType, values := range metricsData {
 						for metricName, metricValue := range values {
 							go func(mtype string, name string, value string) {
-								err := send.SendMetric(mtype, name, value, key)
+								err := send.SendMetricSingle(mtype, name, value, key, pubKey)
 								if err != nil {
 									log.Error("Sender Simple: " + err.Error())
 								}

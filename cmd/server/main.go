@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 
+	"aprokhorov-praktikum/internal/ccrypto"
 	"aprokhorov-praktikum/internal/logger"
 	"aprokhorov-praktikum/internal/server/config"
 	"aprokhorov-praktikum/internal/server/files"
@@ -55,6 +56,7 @@ func main() {
 	flag.StringVar(&conf.DatabaseDSN, "d", "", "Path to PostgresSQL (in prefer to File storing)")
 	flag.StringVar(&conf.StoreFile, "f", "/tmp/devops-metrics-db.json", "File path to store Data")
 	flag.StringVar(&conf.Key, "k", "", "Hash Key")
+	flag.StringVar(&conf.CryptoKey, "crypto-key", "", "Path to id_rsa file")
 	flag.BoolVar(&conf.Restore, "r", true, "Restore Metrics from file?")
 	flag.IntVar(&conf.LogLevel, "l", 1, "Log Level, default:Warning")
 	flag.Parse()
@@ -95,6 +97,15 @@ func main() {
 		err = database.Close()
 	}()
 
+	// Get Private Key if set
+	var privKey *ccrypto.PrivateKey
+	if conf.CryptoKey != "" {
+		privKey, err = ccrypto.NewPrivateKeyFromFile(conf.CryptoKey)
+		if err != nil {
+			logger.Error("Failed to load Private Key: " + err.Error())
+		}
+	}
+
 	// Init chi Router and setup Handlers
 	r := chi.NewRouter()
 
@@ -106,16 +117,20 @@ func main() {
 		r.Get("/ping", handlers.Ping(database))
 
 		r.Route("/value", func(r chi.Router) {
+			r.Use(handlers.Decrypt(privKey))
 			r.Post("/", handlers.JSONRead(database, conf.Key))
 			r.Get("/{metricType}/{metricName}", handlers.Get(database))
 		})
 
 		r.Route("/update", func(r chi.Router) {
+			r.Use(handlers.Decrypt(privKey))
 			r.Post("/", handlers.JSONUpdate(database, conf.Key))
 			r.Post("/{metricType}/{metricName}/{metricValue}", handlers.Post(database))
 		})
-
-		r.Post("/updates/", handlers.JSONUpdates(database, conf.Key))
+		r.Route("/updates", func(r chi.Router) {
+			r.Use(handlers.Decrypt(privKey))
+			r.Post("/", handlers.JSONUpdates(database, conf.Key))
+		})
 	})
 
 	// Init system calls

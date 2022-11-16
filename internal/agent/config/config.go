@@ -14,6 +14,7 @@ type Config struct {
 	PollInterval   string   `env:"POLL_INTERVAL"`   // envDefault:"2s"`
 	SendInterval   string   `env:"REPORT_INTERVAL"` // envDefault:"10s"`
 	Key            string   `env:"KEY"`             // envDefault:""`
+	CryptoKey      string   `env:"CRYPTO_KEY"`      // envDefault:""`
 	Batch          bool     `json:"-" env:"-"`
 	LogLevel       int      `json:"-" env:"LOG_LEVEL"`
 }
