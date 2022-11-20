@@ -144,7 +144,7 @@ func main() {
 
 	// Init system calls
 	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	if conf.DatabaseDSN == "" {
 		// Init Saver
