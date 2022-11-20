@@ -51,6 +51,8 @@ func main() {
 
 	conf := config.NewServerConfig()
 	// Init Flags
+	flag.StringVar(&conf.ConfigFile, "c", "", "Path to Config File")
+	flag.StringVar(&conf.ConfigFile, "config", "", "Path to Config File")
 	flag.StringVar(&conf.Address, "a", "127.0.0.1:8080", "An ip address for server run")
 	flag.StringVar(&conf.StoreInterval, "i", "300s", "Interval for storing Data to file")
 	flag.StringVar(&conf.DatabaseDSN, "d", "", "Path to PostgresSQL (in prefer to File storing)")
@@ -61,18 +63,25 @@ func main() {
 	flag.IntVar(&conf.LogLevel, "l", 1, "Log Level, default:Warning")
 	flag.Parse()
 
-	// Init Config from Env
-	conf.EnvInit()
-
-	ctx := context.Background()
-
 	// Init Logger
 	logger, err := logger.NewLogger("server.log", conf.LogLevel)
 	if err != nil {
 		log.Fatal("cannot initialize zap.logger")
 	}
 
+	// Init Config from File
+	if conf.ConfigFile != "" {
+		if err = conf.LoadFromFile(); err != nil {
+			logger.Error(fmt.Sprintf("config: cannot load config from file: %s", err.Error()))
+		}
+	}
+
+	// Init Config from Env
+	conf.EnvInit()
+
 	logger.Info(conf.String())
+
+	ctx := context.Background()
 
 	// Init Storage
 	var database storage.Storage

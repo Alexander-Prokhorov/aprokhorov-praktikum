@@ -31,3 +31,6 @@ id_rsa
 # Custom User
 *.old
 *.log
+
+# Local configs
+*.cfg

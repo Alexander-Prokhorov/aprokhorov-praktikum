@@ -121,7 +121,7 @@ func TestConfig_String(t *testing.T) {
 				Batch:          true,
 				LogLevel:       0,
 			},
-			want: "{\"Address\":\"\",\"PollInterval\":\"\",\"SendInterval\":\"\",\"Key\":\"\",\"CryptoKey\":\"\"}",
+			want: "{\"address\":\"\",\"poll_interval\":\"\",\"report_interval\":\"\",\"crypto_key\":\"\"}",
 		},
 	}
 

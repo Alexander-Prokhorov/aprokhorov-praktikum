@@ -52,6 +52,8 @@ func main() {
 	conf := config.NewAgentConfig()
 
 	// Init flags
+	flag.StringVar(&conf.ConfigFile, "c", "", "Path to Config File")
+	flag.StringVar(&conf.ConfigFile, "config", "", "Path to Config File")
 	flag.StringVar(&conf.Address, "a", "127.0.0.1:8080", "An ip address for server run")
 	flag.StringVar(&conf.SendInterval, "r", "10s", "Report Interval")
 	flag.StringVar(&conf.PollInterval, "p", "2s", "Poll Interval")
@@ -64,6 +66,13 @@ func main() {
 	logger, err := logger.NewLogger("agent.log", conf.LogLevel)
 	if err != nil {
 		log.Fatal("cannot initialize zap.logger")
+	}
+
+	// Init Config from File
+	if conf.ConfigFile != "" {
+		if err = conf.LoadFromFile(); err != nil {
+			logger.Error(fmt.Sprintf("config: cannot load config from file: %s", err.Error()))
+		}
 	}
 
 	// Init Config from Env

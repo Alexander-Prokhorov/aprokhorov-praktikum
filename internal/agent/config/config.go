@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"log"
 
 	"github.com/caarlos0/env/v6"
@@ -9,14 +10,45 @@ import (
 
 // Agent Config Data.
 type Config struct {
-	MemStatMetrics []string `json:"-"`
-	Address        string   `env:"ADDRESS"`         // envDefault:"127.0.0.1:8080"`
-	PollInterval   string   `env:"POLL_INTERVAL"`   // envDefault:"2s"`
-	SendInterval   string   `env:"REPORT_INTERVAL"` // envDefault:"10s"`
-	Key            string   `env:"KEY"`             // envDefault:""`
-	CryptoKey      string   `env:"CRYPTO_KEY"`      // envDefault:""`
+	ConfigFile     string   `json:"-" env:"CONFIG"`
+	MemStatMetrics []string `json:"-" env:"-"`
+	Address        string   `json:"address" env:"ADDRESS"`                 // envDefault:"127.0.0.1:8080"`
+	PollInterval   string   `json:"poll_interval" env:"POLL_INTERVAL"`     // envDefault:"2s"`
+	SendInterval   string   `json:"report_interval" env:"REPORT_INTERVAL"` // envDefault:"10s"`
+	Key            string   `json:"-" env:"KEY"`                           // envDefault:""`
+	CryptoKey      string   `json:"crypto_key" env:"CRYPTO_KEY"`           // envDefault:""`
 	Batch          bool     `json:"-" env:"-"`
 	LogLevel       int      `json:"-" env:"LOG_LEVEL"`
+}
+
+// Fill up Agent Config from json config File
+func (c *Config) LoadFromFile() error {
+	data, err := ioutil.ReadFile(c.ConfigFile)
+	if err != nil {
+		return err
+	}
+
+	tCfg := Config{}
+	err = json.Unmarshal(data, &tCfg)
+	if err != nil {
+		return err
+	}
+
+	switch {
+	case c.Address == "":
+		c.Address = tCfg.Address
+		fallthrough
+	case c.PollInterval == "":
+		c.PollInterval = tCfg.PollInterval
+		fallthrough
+	case c.SendInterval == "":
+		c.SendInterval = tCfg.SendInterval
+		fallthrough
+	case c.CryptoKey == "":
+		c.CryptoKey = tCfg.CryptoKey
+	}
+
+	return nil
 }
 
 // Fill up Agent Config from environment variables.
