@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 
+	"aprokhorov-praktikum/internal/ccrypto"
 	"aprokhorov-praktikum/internal/logger"
 	"aprokhorov-praktikum/internal/server/config"
 	"aprokhorov-praktikum/internal/server/files"
@@ -50,19 +51,17 @@ func main() {
 
 	conf := config.NewServerConfig()
 	// Init Flags
+	flag.StringVar(&conf.ConfigFile, "c", "", "Path to Config File")
+	flag.StringVar(&conf.ConfigFile, "config", "", "Path to Config File")
 	flag.StringVar(&conf.Address, "a", "127.0.0.1:8080", "An ip address for server run")
 	flag.StringVar(&conf.StoreInterval, "i", "300s", "Interval for storing Data to file")
 	flag.StringVar(&conf.DatabaseDSN, "d", "", "Path to PostgresSQL (in prefer to File storing)")
 	flag.StringVar(&conf.StoreFile, "f", "/tmp/devops-metrics-db.json", "File path to store Data")
 	flag.StringVar(&conf.Key, "k", "", "Hash Key")
+	flag.StringVar(&conf.CryptoKey, "crypto-key", "", "Path to id_rsa file")
 	flag.BoolVar(&conf.Restore, "r", true, "Restore Metrics from file?")
 	flag.IntVar(&conf.LogLevel, "l", 1, "Log Level, default:Warning")
 	flag.Parse()
-
-	// Init Config from Env
-	conf.EnvInit()
-
-	ctx := context.Background()
 
 	// Init Logger
 	logger, err := logger.NewLogger("server.log", conf.LogLevel)
@@ -70,7 +69,19 @@ func main() {
 		log.Fatal("cannot initialize zap.logger")
 	}
 
+	// Init Config from File
+	if conf.ConfigFile != "" {
+		if err = conf.LoadFromFile(); err != nil {
+			logger.Error(fmt.Sprintf("config: cannot load config from file: %s", err.Error()))
+		}
+	}
+
+	// Init Config from Env
+	conf.EnvInit()
+
 	logger.Info(conf.String())
+
+	ctx := context.Background()
 
 	// Init Storage
 	var database storage.Storage
@@ -95,6 +106,15 @@ func main() {
 		err = database.Close()
 	}()
 
+	// Get Private Key if set
+	var privKey *ccrypto.PrivateKey
+	if conf.CryptoKey != "" {
+		privKey, err = ccrypto.NewPrivateKeyFromFile(conf.CryptoKey)
+		if err != nil {
+			logger.Error("Failed to load Private Key: " + err.Error())
+		}
+	}
+
 	// Init chi Router and setup Handlers
 	r := chi.NewRouter()
 
@@ -106,21 +126,25 @@ func main() {
 		r.Get("/ping", handlers.Ping(database))
 
 		r.Route("/value", func(r chi.Router) {
+			r.Use(handlers.Decrypt(privKey))
 			r.Post("/", handlers.JSONRead(database, conf.Key))
 			r.Get("/{metricType}/{metricName}", handlers.Get(database))
 		})
 
 		r.Route("/update", func(r chi.Router) {
+			r.Use(handlers.Decrypt(privKey))
 			r.Post("/", handlers.JSONUpdate(database, conf.Key))
 			r.Post("/{metricType}/{metricName}/{metricValue}", handlers.Post(database))
 		})
-
-		r.Post("/updates/", handlers.JSONUpdates(database, conf.Key))
+		r.Route("/updates", func(r chi.Router) {
+			r.Use(handlers.Decrypt(privKey))
+			r.Post("/", handlers.JSONUpdates(database, conf.Key))
+		})
 	})
 
 	// Init system calls
 	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	if conf.DatabaseDSN == "" {
 		// Init Saver

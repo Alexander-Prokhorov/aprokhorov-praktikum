@@ -69,8 +69,9 @@ func TestConfig_String(t *testing.T) {
 				Key:           "",
 				LogLevel:      0,
 			},
-			want: "{\"Address\":\"\",\"StoreInterval\":\"\"," +
-				"\"StoreFile\":\"\",\"DatabaseDSN\":\"\",\"Restore\":false,\"Key\":\"\"}",
+			want: "{\"address\":\"\",\"store_interval\":\"\"," +
+				"\"store_file\":\"\",\"database_dsn\":\"\"," +
+				"\"restore\":false,\"crypto_key\":\"\"}",
 		},
 	}
 
