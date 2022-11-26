@@ -18,6 +18,7 @@ type Config struct {
 	Restore       bool   `json:"restore" env:"RESTORE"`               // envDefault:"true"`
 	Key           string `json:"-" env:"KEY"`                         // envDefault:""`
 	CryptoKey     string `json:"crypto_key" env:"CRYPTO_KEY"`         // envDefault:""`
+	TrustedSubnet string `json:"trusted_subnet" env:"TRUSTED_SUBNET"` // envDefault:""`
 	LogLevel      int    `json:"-" env:"LOG_LEVEL"`
 }
 
@@ -57,6 +58,9 @@ func (c *Config) LoadFromFile() error {
 		fallthrough
 	case c.CryptoKey == "":
 		c.CryptoKey = tCfg.CryptoKey
+		fallthrough
+	case c.TrustedSubnet == "":
+		c.CryptoKey = tCfg.TrustedSubnet
 	}
 
 	return nil

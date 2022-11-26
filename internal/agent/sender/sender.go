@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -20,10 +21,11 @@ const (
 
 // Agent Sender Data.
 type Sender struct {
-	Server string
-	Port   string
-	URL    url.URL
-	Client http.Client
+	Server   string
+	Port     string
+	URL      url.URL
+	Client   http.Client
+	sourceIP string
 }
 
 // Create and init new Agent Sender.
@@ -48,6 +50,17 @@ func NewAgentSender(address string) *Sender {
 	s.URL.Host = address
 
 	return &s
+}
+
+// Init Source Address from local host addresses.
+// Prefer Global->Private->Loopback->LinkLocal.
+// Prefer biggest IP, if found several.
+func (s *Sender) InitSourceAddress() (string, error) {
+	ip, err := getOutputAddr()
+
+	s.sourceIP = ip.String()
+
+	return s.sourceIP, err
 }
 
 // Send Metric to Server.
@@ -79,6 +92,7 @@ func (s *Sender) SendMetricURL(mtype string, name string, value string, key stri
 		return err
 	}
 
+	request.Header.Set("X-Real-IP", s.sourceIP)
 	request.Header.Set("Content-Type", "text/plain")
 
 	res, err := s.Client.Do(request)
@@ -121,6 +135,7 @@ func (s *Sender) SendMetricJSON(
 		return err
 	}
 
+	request.Header.Set("X-Real-IP", s.sourceIP)
 	request.Header.Set("Content-Type", "application/json")
 
 	res, err := s.Client.Do(request)
@@ -205,6 +220,7 @@ func (s *Sender) SendMetricJSONBatch(
 		return err
 	}
 
+	request.Header.Set("X-Real-IP", s.sourceIP)
 	request.Header.Set("Content-Type", "application/json")
 
 	res, err := s.Client.Do(request)
@@ -213,4 +229,56 @@ func (s *Sender) SendMetricJSONBatch(
 	}
 
 	return res.Body.Close()
+}
+
+func getOutputAddr() (net.IP, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return nil, err
+	}
+	var ip net.IP
+	var gIP, pIP, lIP, llIP []net.IP
+	for _, addr := range addrs {
+		ip = addr.(*net.IPNet).IP
+		switch {
+		case ip.IsGlobalUnicast() && !ip.IsPrivate():
+			gIP = append(gIP, ip)
+		case ip.IsPrivate():
+			pIP = append(pIP, ip)
+		case ip.IsLoopback():
+			lIP = append(lIP, ip)
+		case ip.IsLinkLocalUnicast():
+			llIP = append(llIP, ip)
+		}
+	}
+	switch {
+	case len(gIP) != 0:
+		return biggestIP(gIP), nil
+	case len(pIP) != 0:
+		return biggestIP(pIP), nil
+	case len(lIP) != 0:
+		return biggestIP(lIP), nil
+	case len(llIP) != 0:
+		return biggestIP(llIP), nil
+	default:
+		return ip, nil
+	}
+}
+
+func biggestIP(ips []net.IP) net.IP {
+	var bIP net.IP
+	switch len(ips) {
+	case 0:
+		return nil
+	case 1:
+		bIP = ips[0]
+	default:
+		bIP = ips[0]
+		for _, ip := range ips[1:] {
+			if bytes.Compare(bIP, ip) < 0 {
+				bIP = ip
+			}
+		}
+	}
+	return bIP
 }

@@ -71,7 +71,7 @@ func TestConfig_String(t *testing.T) {
 			},
 			want: "{\"address\":\"\",\"store_interval\":\"\"," +
 				"\"store_file\":\"\",\"database_dsn\":\"\"," +
-				"\"restore\":false,\"crypto_key\":\"\"}",
+				"\"restore\":false,\"crypto_key\":\"\",\"trusted_subnet\":\"\"}",
 		},
 	}
 

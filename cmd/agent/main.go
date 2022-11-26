@@ -83,6 +83,11 @@ func main() {
 
 	// Init Sender
 	send := sender.NewAgentSender(conf.Address)
+	ip, err := send.InitSourceAddress()
+	if err != nil {
+		logger.Error(fmt.Sprintf("Cannot detect SourceIP, fill empty: %s", err.Error()))
+	}
+	logger.Debug(fmt.Sprintf("Use source IP: %s", ip))
 
 	// Init Poller
 	NewMetrics := poller.NewAgentPoller(ctx)

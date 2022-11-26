@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -59,6 +60,7 @@ func main() {
 	flag.StringVar(&conf.StoreFile, "f", "/tmp/devops-metrics-db.json", "File path to store Data")
 	flag.StringVar(&conf.Key, "k", "", "Hash Key")
 	flag.StringVar(&conf.CryptoKey, "crypto-key", "", "Path to id_rsa file")
+	flag.StringVar(&conf.TrustedSubnet, "t", "", "Trusted Subnet (X-Real-IP check)")
 	flag.BoolVar(&conf.Restore, "r", true, "Restore Metrics from file?")
 	flag.IntVar(&conf.LogLevel, "l", 1, "Log Level, default:Warning")
 	flag.Parse()
@@ -82,6 +84,11 @@ func main() {
 	logger.Info(conf.String())
 
 	ctx := context.Background()
+
+	_, acl, err := net.ParseCIDR(conf.TrustedSubnet)
+	if err != nil {
+		logger.Error(fmt.Sprintf("IP Check is Disabled bacause of error: %s", err.Error()))
+	}
 
 	// Init Storage
 	var database storage.Storage
@@ -118,6 +125,7 @@ func main() {
 	// Init chi Router and setup Handlers
 	r := chi.NewRouter()
 
+	r.Use(handlers.CheckACL(acl))
 	r.Use(handlers.Unpack)
 	r.Use(handlers.Pack)
 	r.Mount("/debug", middleware.Profiler())
