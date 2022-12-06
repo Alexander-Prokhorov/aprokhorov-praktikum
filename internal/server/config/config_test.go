@@ -19,6 +19,7 @@ func TestNewServerConfig(t *testing.T) {
 			name: "Test creatrion of Config",
 			want: &config.Config{
 				Address:       "",
+				GRPCAddress:   "",
 				StoreInterval: "",
 				StoreFile:     "",
 				DatabaseDSN:   "",
@@ -45,6 +46,7 @@ func TestConfig_String(t *testing.T) {
 
 	type fields struct {
 		Address       string
+		GRPCAddress   string
 		StoreInterval string
 		StoreFile     string
 		DatabaseDSN   string
@@ -62,6 +64,7 @@ func TestConfig_String(t *testing.T) {
 			name: "String test for Config",
 			fields: fields{
 				Address:       "",
+				GRPCAddress:   "",
 				StoreInterval: "",
 				StoreFile:     "",
 				DatabaseDSN:   "",
@@ -69,9 +72,9 @@ func TestConfig_String(t *testing.T) {
 				Key:           "",
 				LogLevel:      0,
 			},
-			want: "{\"address\":\"\",\"store_interval\":\"\"," +
+			want: "{\"address\":\"\",\"grpc_address\":\"\",\"store_interval\":\"\"," +
 				"\"store_file\":\"\",\"database_dsn\":\"\"," +
-				"\"restore\":false,\"crypto_key\":\"\"}",
+				"\"restore\":false,\"crypto_key\":\"\",\"trusted_subnet\":\"\"}",
 		},
 	}
 
@@ -81,6 +84,7 @@ func TestConfig_String(t *testing.T) {
 			t.Parallel()
 			c := config.Config{
 				Address:       tt.fields.Address,
+				GRPCAddress:   tt.fields.GRPCAddress,
 				StoreInterval: tt.fields.StoreInterval,
 				StoreFile:     tt.fields.StoreFile,
 				DatabaseDSN:   tt.fields.DatabaseDSN,

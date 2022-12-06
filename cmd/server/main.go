@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -14,11 +15,13 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"google.golang.org/grpc"
 
 	"aprokhorov-praktikum/internal/ccrypto"
 	"aprokhorov-praktikum/internal/logger"
 	"aprokhorov-praktikum/internal/server/config"
 	"aprokhorov-praktikum/internal/server/files"
+	serverGRPC "aprokhorov-praktikum/internal/server/grpc"
 	"aprokhorov-praktikum/internal/server/handlers"
 	"aprokhorov-praktikum/internal/storage"
 )
@@ -54,11 +57,13 @@ func main() {
 	flag.StringVar(&conf.ConfigFile, "c", "", "Path to Config File")
 	flag.StringVar(&conf.ConfigFile, "config", "", "Path to Config File")
 	flag.StringVar(&conf.Address, "a", "127.0.0.1:8080", "An ip address for server run")
+	flag.StringVar(&conf.GRPCAddress, "g", "127.0.0.1:8081", "An ip address for server run (GRPC)")
 	flag.StringVar(&conf.StoreInterval, "i", "300s", "Interval for storing Data to file")
 	flag.StringVar(&conf.DatabaseDSN, "d", "", "Path to PostgresSQL (in prefer to File storing)")
 	flag.StringVar(&conf.StoreFile, "f", "/tmp/devops-metrics-db.json", "File path to store Data")
 	flag.StringVar(&conf.Key, "k", "", "Hash Key")
 	flag.StringVar(&conf.CryptoKey, "crypto-key", "", "Path to id_rsa file")
+	flag.StringVar(&conf.TrustedSubnet, "t", "", "Trusted Subnet (X-Real-IP check)")
 	flag.BoolVar(&conf.Restore, "r", true, "Restore Metrics from file?")
 	flag.IntVar(&conf.LogLevel, "l", 1, "Log Level, default:Warning")
 	flag.Parse()
@@ -82,6 +87,11 @@ func main() {
 	logger.Info(conf.String())
 
 	ctx := context.Background()
+
+	_, acl, err := net.ParseCIDR(conf.TrustedSubnet)
+	if err != nil {
+		logger.Error(fmt.Sprintf("IP Check is Disabled bacause of error: %s", err.Error()))
+	}
 
 	// Init Storage
 	var database storage.Storage
@@ -115,9 +125,19 @@ func main() {
 		}
 	}
 
+	// Init gRPC Server
+	listen, err := net.Listen("tcp", conf.GRPCAddress)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	grpcServer := grpc.NewServer()
+	serverGRPC.RegisterMetricsServer(grpcServer, database)
+
 	// Init chi Router and setup Handlers
 	r := chi.NewRouter()
 
+	r.Use(handlers.CheckACL(acl))
 	r.Use(handlers.Unpack)
 	r.Use(handlers.Pack)
 	r.Mount("/debug", middleware.Profiler())
@@ -182,6 +202,12 @@ func main() {
 	}
 
 	go func() {
+		logger.Debug("Сервер gRPC начал работу")
+		logger.Fatal(grpcServer.Serve(listen).Error())
+	}()
+
+	go func() {
+		logger.Debug("Сервер HTTP начал работу")
 		logger.Fatal(server.ListenAndServe().Error())
 	}()
 

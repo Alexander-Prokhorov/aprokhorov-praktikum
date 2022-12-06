@@ -19,6 +19,7 @@ type Config struct {
 	CryptoKey      string   `json:"crypto_key" env:"CRYPTO_KEY"`           // envDefault:""`
 	Batch          bool     `json:"-" env:"-"`
 	LogLevel       int      `json:"-" env:"LOG_LEVEL"`
+	GRPC           bool     `json:"-" env:"GRPC_CLIENT"`
 }
 
 // Fill up Agent Config from json config File

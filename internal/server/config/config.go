@@ -12,12 +12,14 @@ import (
 type Config struct {
 	ConfigFile    string `json:"-" env:"CONFIG"`
 	Address       string `json:"address" env:"ADDRESS"`               // envDefault:"127.0.0.1:8080"`
+	GRPCAddress   string `json:"grpc_address" env:"GRPC_ADDRESS"`     // envDefault:"127.0.0.1:8081"`
 	StoreInterval string `json:"store_interval" env:"STORE_INTERVAL"` // envDefault:"3s"`
 	StoreFile     string `json:"store_file" env:"STORE_FILE"`         // envDefault:"/tmp/devops-metrics-db.json"`
 	DatabaseDSN   string `json:"database_dsn" env:"DATABASE_DSN"`     // envDefault:"localhost:5432"`
 	Restore       bool   `json:"restore" env:"RESTORE"`               // envDefault:"true"`
 	Key           string `json:"-" env:"KEY"`                         // envDefault:""`
 	CryptoKey     string `json:"crypto_key" env:"CRYPTO_KEY"`         // envDefault:""`
+	TrustedSubnet string `json:"trusted_subnet" env:"TRUSTED_SUBNET"` // envDefault:""`
 	LogLevel      int    `json:"-" env:"LOG_LEVEL"`
 }
 
@@ -43,6 +45,9 @@ func (c *Config) LoadFromFile() error {
 	case c.Address == "":
 		c.Address = tCfg.Address
 		fallthrough
+	case c.GRPCAddress == "":
+		c.GRPCAddress = tCfg.GRPCAddress
+		fallthrough
 	case c.StoreInterval == "":
 		c.StoreInterval = tCfg.StoreInterval
 		fallthrough
@@ -57,6 +62,9 @@ func (c *Config) LoadFromFile() error {
 		fallthrough
 	case c.CryptoKey == "":
 		c.CryptoKey = tCfg.CryptoKey
+		fallthrough
+	case c.TrustedSubnet == "":
+		c.CryptoKey = tCfg.TrustedSubnet
 	}
 
 	return nil
