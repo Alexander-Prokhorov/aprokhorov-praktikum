@@ -15,11 +15,13 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"google.golang.org/grpc"
 
 	"aprokhorov-praktikum/internal/ccrypto"
 	"aprokhorov-praktikum/internal/logger"
 	"aprokhorov-praktikum/internal/server/config"
 	"aprokhorov-praktikum/internal/server/files"
+	serverGRPC "aprokhorov-praktikum/internal/server/grpc"
 	"aprokhorov-praktikum/internal/server/handlers"
 	"aprokhorov-praktikum/internal/storage"
 )
@@ -55,6 +57,7 @@ func main() {
 	flag.StringVar(&conf.ConfigFile, "c", "", "Path to Config File")
 	flag.StringVar(&conf.ConfigFile, "config", "", "Path to Config File")
 	flag.StringVar(&conf.Address, "a", "127.0.0.1:8080", "An ip address for server run")
+	flag.StringVar(&conf.GRPCAddress, "g", "127.0.0.1:8081", "An ip address for server run (GRPC)")
 	flag.StringVar(&conf.StoreInterval, "i", "300s", "Interval for storing Data to file")
 	flag.StringVar(&conf.DatabaseDSN, "d", "", "Path to PostgresSQL (in prefer to File storing)")
 	flag.StringVar(&conf.StoreFile, "f", "/tmp/devops-metrics-db.json", "File path to store Data")
@@ -121,6 +124,15 @@ func main() {
 			logger.Error("Failed to load Private Key: " + err.Error())
 		}
 	}
+
+	// Init gRPC Server
+	listen, err := net.Listen("tcp", conf.GRPCAddress)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	grpcServer := grpc.NewServer()
+	serverGRPC.RegisterMetricsServer(grpcServer, database)
 
 	// Init chi Router and setup Handlers
 	r := chi.NewRouter()
@@ -190,6 +202,12 @@ func main() {
 	}
 
 	go func() {
+		logger.Debug("Сервер gRPC начал работу")
+		logger.Fatal(grpcServer.Serve(listen).Error())
+	}()
+
+	go func() {
+		logger.Debug("Сервер HTTP начал работу")
 		logger.Fatal(server.ListenAndServe().Error())
 	}()
 

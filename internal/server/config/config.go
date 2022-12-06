@@ -12,6 +12,7 @@ import (
 type Config struct {
 	ConfigFile    string `json:"-" env:"CONFIG"`
 	Address       string `json:"address" env:"ADDRESS"`               // envDefault:"127.0.0.1:8080"`
+	GRPCAddress   string `json:"grpc_address" env:"GRPC_ADDRESS"`     // envDefault:"127.0.0.1:8081"`
 	StoreInterval string `json:"store_interval" env:"STORE_INTERVAL"` // envDefault:"3s"`
 	StoreFile     string `json:"store_file" env:"STORE_FILE"`         // envDefault:"/tmp/devops-metrics-db.json"`
 	DatabaseDSN   string `json:"database_dsn" env:"DATABASE_DSN"`     // envDefault:"localhost:5432"`
@@ -43,6 +44,9 @@ func (c *Config) LoadFromFile() error {
 	switch {
 	case c.Address == "":
 		c.Address = tCfg.Address
+		fallthrough
+	case c.GRPCAddress == "":
+		c.GRPCAddress = tCfg.GRPCAddress
 		fallthrough
 	case c.StoreInterval == "":
 		c.StoreInterval = tCfg.StoreInterval

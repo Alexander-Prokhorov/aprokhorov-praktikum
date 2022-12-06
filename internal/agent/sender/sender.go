@@ -2,6 +2,7 @@ package sender
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -20,7 +21,7 @@ const (
 )
 
 // Agent Sender Data.
-type Sender struct {
+type HTTPSender struct {
 	Server   string
 	Port     string
 	URL      url.URL
@@ -29,14 +30,14 @@ type Sender struct {
 }
 
 // Create and init new Agent Sender.
-func NewAgentSender(address string) *Sender {
+func NewAgentSender(address string) *HTTPSender {
 	const (
 		defaultTimeout         = 5
 		defaultMaxIdleConns    = 5
 		defaultIdleConnTimeout = 5
 	)
 
-	var s Sender
+	var s HTTPSender
 
 	s.Client = http.Client{
 		Timeout: time.Second * defaultTimeout,
@@ -55,7 +56,7 @@ func NewAgentSender(address string) *Sender {
 // Init Source Address from local host addresses.
 // Prefer Global->Private->Loopback->LinkLocal.
 // Prefer biggest IP, if found several.
-func (s *Sender) InitSourceAddress() (string, error) {
+func (s *HTTPSender) InitSourceAddress() (string, error) {
 	ip, err := getOutputAddr()
 
 	s.sourceIP = ip.String()
@@ -64,7 +65,8 @@ func (s *Sender) InitSourceAddress() (string, error) {
 }
 
 // Send Metric to Server.
-func (s *Sender) SendMetricSingle(
+func (s *HTTPSender) SendMetricSingle(
+	ctx context.Context,
 	mtype string,
 	name string,
 	value string,
@@ -75,7 +77,8 @@ func (s *Sender) SendMetricSingle(
 }
 
 // Send Batch of metrics to Server.
-func (s *Sender) SendMetricBatch(
+func (s *HTTPSender) SendMetricBatch(
+	ctx context.Context,
 	metrics map[string]map[string]string,
 	hashKey string,
 	pubKey *ccrypto.PublicKey,
@@ -84,7 +87,7 @@ func (s *Sender) SendMetricBatch(
 }
 
 // Send Metrics by POST-req to Server url-encoded.
-func (s *Sender) SendMetricURL(mtype string, name string, value string, key string) error {
+func (s *HTTPSender) SendMetricURL(mtype string, name string, value string, key string) error {
 	s.URL.Path = "update/" + mtype + "/" + name + "/" + value
 
 	request, err := http.NewRequest(http.MethodPost, s.URL.String(), nil)
@@ -104,7 +107,7 @@ func (s *Sender) SendMetricURL(mtype string, name string, value string, key stri
 }
 
 // Send Metric by POST-req for Server JSON-body.
-func (s *Sender) SendMetricJSON(
+func (s *HTTPSender) SendMetricJSON(
 	mtype string,
 	name string,
 	value string,
@@ -146,7 +149,7 @@ func (s *Sender) SendMetricJSON(
 	return res.Body.Close()
 }
 
-func (s *Sender) helperSendMetricJSON(mtype string, name string, value string, key string) (Metrics, error) {
+func (s *HTTPSender) helperSendMetricJSON(mtype string, name string, value string, key string) (Metrics, error) {
 	const (
 		bitSize = 64
 		base    = 10
@@ -183,7 +186,7 @@ func (s *Sender) helperSendMetricJSON(mtype string, name string, value string, k
 }
 
 // Send batch of Metrics by POST-req with JSON-body.
-func (s *Sender) SendMetricJSONBatch(
+func (s *HTTPSender) SendMetricJSONBatch(
 	metrics map[string]map[string]string,
 	hashKey string,
 	pubKey *ccrypto.PublicKey,

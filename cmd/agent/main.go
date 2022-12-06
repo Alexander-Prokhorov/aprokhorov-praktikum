@@ -60,6 +60,8 @@ func main() {
 	flag.StringVar(&conf.Key, "k", "", "Key for Hash")
 	flag.StringVar(&conf.CryptoKey, "crypto-key", "", "Path to id_rsa.pub file")
 	flag.IntVar(&conf.LogLevel, "l", 1, "Log Level, default:Warning")
+	flag.BoolVar(&conf.Batch, "b", false, "Use Batch Metrics Send? (Not compatible with GRPC for now)")
+	flag.BoolVar(&conf.GRPC, "g", false, "Use GRPC intead of HTTP")
 	flag.Parse()
 
 	// Init Logger
@@ -82,12 +84,22 @@ func main() {
 	ctx := context.Background()
 
 	// Init Sender
-	send := sender.NewAgentSender(conf.Address)
-	ip, err := send.InitSourceAddress()
-	if err != nil {
-		logger.Error(fmt.Sprintf("Cannot detect SourceIP, fill empty: %s", err.Error()))
+	var send sender.Sender
+	if conf.GRPC {
+		send, err = sender.NewGRPCAgentSender(conf.Address)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		logger.Debug("Init with GRPC Client")
+	} else {
+		sender := sender.NewAgentSender(conf.Address)
+		ip, er := sender.InitSourceAddress()
+		if er != nil {
+			logger.Error(fmt.Sprintf("Cannot detect SourceIP, fill empty: %s", err.Error()))
+		}
+		logger.Debug(fmt.Sprintf("Use source IP: %s", ip))
+		send = sender
 	}
-	logger.Debug(fmt.Sprintf("Use source IP: %s", ip))
 
 	// Init Poller
 	NewMetrics := poller.NewAgentPoller(ctx)
@@ -189,7 +201,6 @@ func main() {
 		ctx context.Context,
 		signal <-chan time.Time,
 		wgr *sync.WaitGroup,
-		s *sender.Sender,
 		metrics *poller.Poller,
 		batchStatus bool,
 		key string,
@@ -209,7 +220,7 @@ func main() {
 				switch batchStatus {
 				case true:
 					go func() {
-						err = s.SendMetricBatch(metricsData, key, pubKey)
+						err = send.SendMetricBatch(ctx, metricsData, key, pubKey)
 						if err != nil {
 							log.Error("Sender Batch: " + err.Error())
 						}
@@ -218,7 +229,7 @@ func main() {
 					for metricType, values := range metricsData {
 						for metricName, metricValue := range values {
 							go func(mtype string, name string, value string) {
-								err := send.SendMetricSingle(mtype, name, value, key, pubKey)
+								err := send.SendMetricSingle(ctx, mtype, name, value, key, pubKey)
 								if err != nil {
 									log.Error("Sender Simple: " + err.Error())
 								}
@@ -233,7 +244,7 @@ func main() {
 				return
 			}
 		}
-	}(ctxMain, tickerSend.C, wg, send, NewMetrics, conf.Batch, conf.Key, logger)
+	}(ctxMain, tickerSend.C, wg, NewMetrics, conf.Batch, conf.Key, logger)
 
 	// Handle system calls
 	<-done
